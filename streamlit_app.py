@@ -1,6 +1,7 @@
 """
 🎮 Smash Tournament Season Rankings
 A Streamlit app for tracking and analyzing tournament results
+Version 2.0 - With player ID tracking and profiles
 """
 
 import streamlit as st
@@ -30,7 +31,11 @@ def load_data():
     if DATA_FILE.exists():
         with open(DATA_FILE, 'r') as f:
             return json.load(f)
-    return {"tournaments": [], "settings": get_default_settings()}
+    return {
+        "tournaments": [],
+        "settings": get_default_settings(),
+        "player_aliases": {}  # Manual alias overrides: {"display_name": ["alt_name1", "alt_name2"]}
+    }
 
 def save_data(data):
     """Save tournament data to file"""
@@ -52,6 +57,131 @@ def get_default_settings():
         "drop_worst": False,
         "min_tournaments": 1
     }
+
+# =============================================================================
+# PLAYER IDENTITY TRACKING
+# =============================================================================
+
+def build_player_registry(tournaments: list, manual_aliases: dict) -> dict:
+    """
+    Build a registry mapping user_ids and names to canonical player identities.
+    
+    Returns: {
+        "by_user_id": {user_id: canonical_name},
+        "by_name": {any_name: canonical_name},
+        "profiles": {canonical_name: {user_id, all_tags, ...}}
+    }
+    """
+    registry = {
+        "by_user_id": {},
+        "by_name": {},
+        "profiles": {}
+    }
+    
+    # First pass: collect all user_ids and their associated names
+    user_id_to_names = {}  # {user_id: set of names}
+    name_to_user_ids = {}  # {name: set of user_ids}
+    
+    for tourney in tournaments:
+        for event in tourney.get("events", []):
+            # From standings
+            for standing in event.get("standings", []):
+                entrant = standing.get("entrant") or {}
+                entrant_name = entrant.get("name", "")
+                
+                for participant in entrant.get("participants", []):
+                    user = participant.get("user") or {}
+                    user_id = user.get("id")
+                    gamer_tag = participant.get("gamerTag", "")
+                    
+                    if user_id:
+                        if user_id not in user_id_to_names:
+                            user_id_to_names[user_id] = set()
+                        user_id_to_names[user_id].add(entrant_name)
+                        if gamer_tag:
+                            user_id_to_names[user_id].add(gamer_tag)
+                        
+                        if entrant_name:
+                            if entrant_name not in name_to_user_ids:
+                                name_to_user_ids[entrant_name] = set()
+                            name_to_user_ids[entrant_name].add(user_id)
+            
+            # From entrants (if available)
+            for entrant in event.get("entrants", []):
+                entrant_name = entrant.get("name", "")
+                
+                for participant in entrant.get("participants", []):
+                    user = participant.get("user") or {}
+                    user_id = user.get("id")
+                    gamer_tag = participant.get("gamerTag", "")
+                    
+                    if user_id:
+                        if user_id not in user_id_to_names:
+                            user_id_to_names[user_id] = set()
+                        user_id_to_names[user_id].add(entrant_name)
+                        if gamer_tag:
+                            user_id_to_names[user_id].add(gamer_tag)
+                        
+                        if entrant_name:
+                            if entrant_name not in name_to_user_ids:
+                                name_to_user_ids[entrant_name] = set()
+                            name_to_user_ids[entrant_name].add(user_id)
+    
+    # Build canonical names (use most recent or most common tag)
+    for user_id, names in user_id_to_names.items():
+        # Pick the longest name as canonical (usually includes prefix)
+        canonical = max(names, key=len) if names else f"Player_{user_id}"
+        
+        registry["by_user_id"][user_id] = canonical
+        
+        for name in names:
+            registry["by_name"][name] = canonical
+        
+        if canonical not in registry["profiles"]:
+            registry["profiles"][canonical] = {
+                "user_id": user_id,
+                "all_tags": list(names),
+                "canonical_name": canonical
+            }
+    
+    # Apply manual aliases (overrides)
+    for display_name, aliases in manual_aliases.items():
+        for alias in aliases:
+            registry["by_name"][alias] = display_name
+        
+        # Also add the display_name itself
+        registry["by_name"][display_name] = display_name
+        
+        if display_name not in registry["profiles"]:
+            registry["profiles"][display_name] = {
+                "user_id": None,
+                "all_tags": [display_name] + aliases,
+                "canonical_name": display_name
+            }
+        else:
+            registry["profiles"][display_name]["all_tags"] = list(
+                set(registry["profiles"][display_name]["all_tags"] + aliases)
+            )
+    
+    # Add any names not yet in registry (no user_id found)
+    for tourney in tournaments:
+        for event in tourney.get("events", []):
+            for standing in event.get("standings", []):
+                entrant = standing.get("entrant") or {}
+                name = entrant.get("name", "")
+                if name and name not in registry["by_name"]:
+                    registry["by_name"][name] = name
+                    registry["profiles"][name] = {
+                        "user_id": None,
+                        "all_tags": [name],
+                        "canonical_name": name
+                    }
+    
+    return registry
+
+def get_canonical_name(name: str, registry: dict) -> str:
+    """Get the canonical name for a player"""
+    return registry.get("by_name", {}).get(name, name)
 
 # =============================================================================
 # START.GG API
@@ -137,6 +267,9 @@ class StartGGExporter:
         if progress_callback:
             progress_callback(f"Processing event: {singles_event['name']}...")
         
+        # Get entrants (with user IDs!)
+        entrants = self._get_entrants(event_id, progress_callback)
+        
         # Get standings
         standings = self._get_standings(event_id, progress_callback)
         
@@ -162,6 +295,7 @@ class StartGGExporter:
                 "name": singles_event["name"],
                 "numEntrants": singles_event["numEntrants"],
                 "videogame": singles_event.get("videogame"),
+                "entrants": entrants,
                 "standings": standings,
                 "sets": all_sets
             }]
@@ -169,8 +303,63 @@ class StartGGExporter:
         
         return export_data
     
+    def _get_entrants(self, event_id: int, progress_callback=None) -> list:
+        """Get event entrants with user IDs"""
+        if progress_callback:
+            progress_callback("Fetching entrants...")
+        
+        entrants = []
+        page = 1
+        
+        while True:
+            query = """
+            query EventEntrants($eventId: ID!, $page: Int!, $perPage: Int!) {
+              event(id: $eventId) {
+                entrants(query: { page: $page, perPage: $perPage }) {
+                  pageInfo { totalPages }
+                  nodes {
+                    id
+                    name
+                    participants {
+                      id
+                      gamerTag
+                      prefix
+                      user {
+                        id
+                        name
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            """
+            
+            result = self._make_request(query, {
+                "eventId": event_id,
+                "page": page,
+                "perPage": 50
+            })
+            
+            if "errors" in result:
+                break
+            
+            nodes = result.get("data", {}).get("event", {}).get("entrants", {}).get("nodes", [])
+            if not nodes:
+                break
+            
+            entrants.extend(nodes)
+            
+            total_pages = result.get("data", {}).get("event", {}).get("entrants", {}).get("pageInfo", {}).get("totalPages", 1)
+            if page >= total_pages:
+                break
+            
+            page += 1
+        
+        return entrants
+    
     def _get_standings(self, event_id: int, progress_callback=None) -> list:
-        """Get event standings"""
+        """Get event standings with user IDs"""
         if progress_callback:
             progress_callback("Fetching standings...")
         
@@ -191,6 +380,10 @@ class StartGGExporter:
                       participants {
                         gamerTag
                         prefix
+                        user {
+                          id
+                          name
+                        }
                       }
                     }
                   }
@@ -283,7 +476,11 @@ class StartGGExporter:
                           entrant {
                             id
                             name
-                            participants { gamerTag prefix }
+                            participants {
+                              gamerTag
+                              prefix
+                              user { id }
+                            }
                           }
                           standing {
                             placement
@@ -333,8 +530,8 @@ class StartGGExporter:
 # RANKING CALCULATIONS
 # =============================================================================
 
-def calculate_rankings(tournaments: list, settings: dict) -> pd.DataFrame:
-    """Calculate season rankings from tournament data"""
+def calculate_rankings(tournaments: list, settings: dict, registry: dict) -> pd.DataFrame:
+    """Calculate season rankings from tournament data with player identity merging"""
     if not tournaments:
         return pd.DataFrame()
     
@@ -354,18 +551,22 @@ def calculate_rankings(tournaments: list, settings: dict) -> pd.DataFrame:
             
             for standing in event.get("standings", []):
                 placement = standing.get("placement")
-                entrant = standing.get("entrant", {})
+                entrant = standing.get("entrant") or {}
                 
                 if not entrant:
                     continue
                 
-                # Get player name
-                player_name = entrant.get("name", "Unknown")
+                # Get canonical player name using registry
+                raw_name = entrant.get("name", "Unknown")
+                player_name = get_canonical_name(raw_name, registry)
                 
                 # Initialize player data
                 if player_name not in player_data:
+                    profile = registry.get("profiles", {}).get(player_name, {})
                     player_data[player_name] = {
                         "name": player_name,
+                        "user_id": profile.get("user_id"),
+                        "all_tags": profile.get("all_tags", [player_name]),
                         "total_points": 0,
                         "results": [],
                         "wins": 0,
@@ -379,7 +580,7 @@ def calculate_rankings(tournaments: list, settings: dict) -> pd.DataFrame:
                 
                 # Calculate points for this placement
                 base_points = 0
-                for place_str, pts in points_map.items():
+                for place_str, pts in sorted(points_map.items(), key=lambda x: int(x[0])):
                     place = int(place_str)
                     if placement <= place:
                         base_points = pts
@@ -397,7 +598,8 @@ def calculate_rankings(tournaments: list, settings: dict) -> pd.DataFrame:
                     "date": tourney_date,
                     "placement": placement,
                     "points": base_points,
-                    "entrants": num_entrants
+                    "entrants": num_entrants,
+                    "tag_used": raw_name
                 })
                 
                 player_data[player_name]["tournaments_played"] += 1
@@ -420,14 +622,18 @@ def calculate_rankings(tournaments: list, settings: dict) -> pd.DataFrame:
             
             for set_data in event.get("sets", []):
                 winner_id = set_data.get("winnerId")
-                slots = set_data.get("slots", [])
+                slots = set_data.get("slots") or []
                 
                 for slot in slots:
+                    if not slot:
+                        continue
                     entrant = slot.get("entrant")
                     if not entrant:
                         continue
                     
-                    player_name = entrant.get("name", "Unknown")
+                    raw_name = entrant.get("name", "Unknown")
+                    player_name = get_canonical_name(raw_name, registry)
+                    
                     if player_name not in player_data:
                         continue
                     
@@ -479,9 +685,124 @@ def calculate_rankings(tournaments: list, settings: dict) -> pd.DataFrame:
     
     return df
 
-def get_head_to_head(tournaments: list, player1: str, player2: str) -> dict:
+def get_player_details(tournaments: list, player_name: str, registry: dict) -> dict:
+    """Get detailed stats for a single player"""
+    details = {
+        "name": player_name,
+        "profile": registry.get("profiles", {}).get(player_name, {}),
+        "results": [],
+        "total_wins": 0,
+        "total_losses": 0,
+        "tournaments_played": 0,
+        "best_placement": 999,
+        "worst_placement": 0,
+        "avg_placement": 0,
+        "notable_wins": [],  # Wins against top players
+        "recent_sets": []
+    }
+    
+    placements = []
+    
+    for tourney in tournaments:
+        tourney_name = tourney["tournament"]["name"]
+        tourney_date = tourney["tournament"].get("startAt", 0)
+        
+        for event in tourney.get("events", []):
+            if event.get("name", "").lower() != "singles":
+                continue
+            
+            # Find this player's standing
+            for standing in event.get("standings", []):
+                entrant = standing.get("entrant") or {}
+                raw_name = entrant.get("name", "")
+                canonical = get_canonical_name(raw_name, registry)
+                
+                if canonical == player_name:
+                    placement = standing.get("placement", 0)
+                    placements.append(placement)
+                    
+                    details["results"].append({
+                        "tournament": tourney_name,
+                        "date": tourney_date,
+                        "placement": placement,
+                        "entrants": event.get("numEntrants", 0),
+                        "tag_used": raw_name
+                    })
+                    
+                    if placement < details["best_placement"]:
+                        details["best_placement"] = placement
+                    if placement > details["worst_placement"]:
+                        details["worst_placement"] = placement
+                    
+                    details["tournaments_played"] += 1
+                    break
+            
+            # Find sets involving this player
+            for set_data in event.get("sets", []):
+                slots = set_data.get("slots") or []
+                if len(slots) != 2:
+                    continue
+                
+                player_in_set = False
+                player_slot = None
+                opponent_slot = None
+                
+                for slot in slots:
+                    if not slot:
+                        continue
+                    entrant = slot.get("entrant") or {}
+                    raw_name = entrant.get("name", "")
+                    canonical = get_canonical_name(raw_name, registry)
+                    
+                    if canonical == player_name:
+                        player_in_set = True
+                        player_slot = slot
+                    else:
+                        opponent_slot = slot
+                
+                if player_in_set and player_slot and opponent_slot:
+                    winner_id = set_data.get("winnerId")
+                    player_entrant = player_slot.get("entrant") or {}
+                    opponent_entrant = opponent_slot.get("entrant") or {}
+                    
+                    won = player_entrant.get("id") == winner_id
+                    
+                    if won:
+                        details["total_wins"] += 1
+                    else:
+                        details["total_losses"] += 1
+                    
+                    opponent_name = get_canonical_name(
+                        opponent_entrant.get("name", "Unknown"),
+                        registry
+                    )
+                    
+                    details["recent_sets"].append({
+                        "tournament": tourney_name,
+                        "round": set_data.get("fullRoundText", "Unknown"),
+                        "opponent": opponent_name,
+                        "score": set_data.get("displayScore", "N/A"),
+                        "won": won
+                    })
+    
+    if placements:
+        details["avg_placement"] = round(sum(placements) / len(placements), 1)
+    
+    # Sort results by date
+    details["results"] = sorted(details["results"], key=lambda x: x.get("date", 0), reverse=True)
+    details["recent_sets"] = details["recent_sets"][:20]  # Last 20 sets
+    
+    return details
+
+def get_head_to_head(tournaments: list, player1: str, player2: str, registry: dict) -> dict:
     """Get head-to-head record between two players"""
-    h2h = {"player1": player1, "player2": player2, "p1_wins": 0, "p2_wins": 0, "sets": []}
+    h2h = {
+        "player1": player1,
+        "player2": player2,
+        "p1_wins": 0,
+        "p2_wins": 0,
+        "sets": []
+    }
     
     for tourney in tournaments:
         tourney_name = tourney["tournament"]["name"]
@@ -491,19 +812,33 @@ def get_head_to_head(tournaments: list, player1: str, player2: str) -> dict:
                 continue
             
             for set_data in event.get("sets", []):
-                slots = set_data.get("slots", [])
+                slots = set_data.get("slots") or []
+                
                 if len(slots) != 2:
                     continue
                 
-                names = [slot.get("entrant", {}).get("name", "") for slot in slots]
+                # Safely get names with null handling
+                slot_names = []
+                for slot in slots:
+                    if slot and slot.get("entrant"):
+                        raw_name = slot["entrant"].get("name", "")
+                        canonical = get_canonical_name(raw_name, registry)
+                        slot_names.append((canonical, slot))
+                    else:
+                        slot_names.append(("", None))
+                
+                if len(slot_names) != 2:
+                    continue
+                
+                names = [sn[0] for sn in slot_names]
                 
                 if player1 in names and player2 in names:
                     winner_id = set_data.get("winnerId")
                     winner_name = None
                     
-                    for slot in slots:
-                        if slot.get("entrant", {}).get("id") == winner_id:
-                            winner_name = slot.get("entrant", {}).get("name")
+                    for canonical, slot in slot_names:
+                        if slot and slot.get("entrant", {}).get("id") == winner_id:
+                            winner_name = canonical
                             break
                     
                     if winner_name == player1:
@@ -528,6 +863,12 @@ def main():
     # Load data
     data = load_data()
     
+    # Build player registry
+    registry = build_player_registry(
+        data["tournaments"],
+        data.get("player_aliases", {})
+    )
+    
     # Sidebar
     with st.sidebar:
         st.title("🎮 Season Rankings")
@@ -536,26 +877,31 @@ def main():
         # Navigation
         page = st.radio(
             "Navigation",
-            ["🏆 Rankings", "➕ Add Tournament", "⚙️ Settings", "🥊 Head-to-Head", "📋 Tournaments"],
+            ["🏆 Rankings", "➕ Add Tournament", "👤 Players", "🥊 Head-to-Head", "📋 Tournaments", "⚙️ Settings", "🔗 Manage Aliases"],
             label_visibility="collapsed"
         )
         
         st.markdown("---")
-        st.caption(f"📊 {len(data['tournaments'])} tournaments loaded")
+        st.caption(f"📊 {len(data['tournaments'])} tournaments")
+        st.caption(f"👥 {len(registry['profiles'])} players")
     
     # Main content
     if page == "🏆 Rankings":
-        show_rankings_page(data)
+        show_rankings_page(data, registry)
     elif page == "➕ Add Tournament":
         show_add_tournament_page(data)
-    elif page == "⚙️ Settings":
-        show_settings_page(data)
+    elif page == "👤 Players":
+        show_players_page(data, registry)
     elif page == "🥊 Head-to-Head":
-        show_head_to_head_page(data)
+        show_head_to_head_page(data, registry)
     elif page == "📋 Tournaments":
         show_tournaments_page(data)
+    elif page == "⚙️ Settings":
+        show_settings_page(data)
+    elif page == "🔗 Manage Aliases":
+        show_aliases_page(data, registry)
 
-def show_rankings_page(data):
+def show_rankings_page(data, registry):
     """Display the main rankings page"""
     st.title("🏆 Season Rankings")
     
@@ -565,7 +911,7 @@ def show_rankings_page(data):
     
     # Calculate rankings
     settings = data.get("settings", get_default_settings())
-    df = calculate_rankings(data["tournaments"], settings)
+    df = calculate_rankings(data["tournaments"], settings, registry)
     
     if df.empty:
         st.warning("No ranking data available.")
@@ -626,7 +972,10 @@ def show_rankings_page(data):
                     "Tournament": t["tournament"]["name"],
                     "Date": datetime.fromtimestamp(t["tournament"].get("startAt", 0)).strftime("%Y-%m-%d") if t["tournament"].get("startAt") else "N/A",
                     "Entrants": t["events"][0].get("numEntrants", 0) if t.get("events") else 0,
-                    "Winner": next((s["entrant"]["name"] for s in t["events"][0].get("standings", []) if s.get("placement") == 1), "N/A") if t.get("events") else "N/A"
+                    "Winner": get_canonical_name(
+                        next((s["entrant"]["name"] for s in t["events"][0].get("standings", []) if s.get("placement") == 1 and s.get("entrant")), "N/A"),
+                        registry
+                    ) if t.get("events") else "N/A"
                 }
                 for t in data["tournaments"]
             ])
@@ -727,6 +1076,189 @@ def show_add_tournament_page(data):
                     save_data(data)
                     st.rerun()
 
+def show_players_page(data, registry):
+    """Page showing player profiles"""
+    st.title("👤 Players")
+    
+    if not data["tournaments"]:
+        st.info("No tournaments added yet.")
+        return
+    
+    # Get all players
+    all_players = sorted(registry.get("profiles", {}).keys())
+    
+    if not all_players:
+        st.warning("No players found.")
+        return
+    
+    # Player selector
+    selected_player = st.selectbox(
+        "Select a player:",
+        all_players,
+        index=0
+    )
+    
+    if selected_player:
+        details = get_player_details(data["tournaments"], selected_player, registry)
+        profile = details.get("profile", {})
+        
+        st.markdown("---")
+        
+        # Player header
+        st.header(selected_player)
+        
+        # Show aliases if any
+        all_tags = profile.get("all_tags", [])
+        if len(all_tags) > 1:
+            other_tags = [t for t in all_tags if t != selected_player]
+            st.caption(f"Also known as: {', '.join(other_tags)}")
+        
+        # Stats overview
+        col1, col2, col3, col4, col5 = st.columns(5)
+        col1.metric("Events", details["tournaments_played"])
+        col2.metric("Wins", details["total_wins"])
+        col3.metric("Losses", details["total_losses"])
+        win_rate = round(details["total_wins"] / (details["total_wins"] + details["total_losses"]) * 100, 1) if (details["total_wins"] + details["total_losses"]) > 0 else 0
+        col4.metric("Win Rate", f"{win_rate}%")
+        col5.metric("Best", f"#{details['best_placement']}" if details["best_placement"] < 999 else "N/A")
+        
+        st.markdown("---")
+        
+        # Tournament results
+        st.subheader("📊 Tournament Results")
+        
+        if details["results"]:
+            results_df = pd.DataFrame(details["results"])
+            results_df["Date"] = results_df["date"].apply(
+                lambda x: datetime.fromtimestamp(x).strftime("%Y-%m-%d") if x else "N/A"
+            )
+            results_df["Placement"] = results_df["placement"].apply(lambda x: f"#{x}")
+            
+            st.dataframe(
+                results_df[["tournament", "Date", "Placement", "entrants", "tag_used"]].rename(columns={
+                    "tournament": "Tournament",
+                    "entrants": "Entrants",
+                    "tag_used": "Tag Used"
+                }),
+                use_container_width=True,
+                hide_index=True
+            )
+        else:
+            st.info("No tournament results found.")
+        
+        # Recent sets
+        st.markdown("---")
+        st.subheader("🎮 Recent Sets")
+        
+        if details["recent_sets"]:
+            for set_info in details["recent_sets"][:10]:
+                result_emoji = "✅" if set_info["won"] else "❌"
+                st.write(f"{result_emoji} vs **{set_info['opponent']}** - {set_info['score']} ({set_info['round']} @ {set_info['tournament']})")
+        else:
+            st.info("No set data found.")
+
+def show_head_to_head_page(data, registry):
+    """Page for head-to-head lookup"""
+    st.title("🥊 Head-to-Head")
+    
+    if not data["tournaments"]:
+        st.info("No tournaments added yet.")
+        return
+    
+    # Get all players
+    all_players = sorted(registry.get("profiles", {}).keys())
+    
+    if len(all_players) < 2:
+        st.warning("Need at least 2 players for head-to-head.")
+        return
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        player1 = st.selectbox("Player 1", all_players, key="p1")
+    
+    with col2:
+        remaining_players = [p for p in all_players if p != player1]
+        player2 = st.selectbox("Player 2", remaining_players, key="p2")
+    
+    if player1 and player2:
+        h2h = get_head_to_head(data["tournaments"], player1, player2, registry)
+        
+        st.markdown("---")
+        
+        col1, col2, col3 = st.columns([2, 1, 2])
+        
+        with col1:
+            st.markdown(f"### {player1}")
+            st.metric("Wins", h2h["p1_wins"])
+        
+        with col2:
+            st.markdown("### vs")
+        
+        with col3:
+            st.markdown(f"### {player2}")
+            st.metric("Wins", h2h["p2_wins"])
+        
+        if h2h["sets"]:
+            st.markdown("---")
+            st.subheader("Match History")
+            
+            for match in h2h["sets"]:
+                winner_emoji = "🏆"
+                st.write(f"**{match['tournament']}** - {match['round']}")
+                st.write(f"  {match['score']} → {winner_emoji} {match['winner']}")
+        else:
+            st.info("These players haven't faced each other yet.")
+
+def show_tournaments_page(data):
+    """Page showing all tournaments"""
+    st.title("📋 Tournament History")
+    
+    if not data["tournaments"]:
+        st.info("No tournaments added yet.")
+        return
+    
+    # Sort by date
+    tournaments = sorted(
+        data["tournaments"],
+        key=lambda t: t["tournament"].get("startAt", 0),
+        reverse=True
+    )
+    
+    for t in tournaments:
+        tourney = t["tournament"]
+        event = t["events"][0] if t.get("events") else {}
+        
+        date_str = ""
+        if tourney.get("startAt"):
+            date_str = datetime.fromtimestamp(tourney["startAt"]).strftime("%b %d, %Y")
+        
+        with st.expander(f"**{tourney['name']}** {('- ' + date_str) if date_str else ''}"):
+            col1, col2, col3 = st.columns(3)
+            col1.metric("Entrants", event.get("numEntrants", "N/A"))
+            col2.metric("Sets", len(event.get("sets", [])))
+            
+            # Get winner
+            winner = "N/A"
+            for standing in event.get("standings", []):
+                if standing.get("placement") == 1 and standing.get("entrant"):
+                    winner = standing["entrant"]["name"]
+                    break
+            col3.metric("Winner", winner)
+            
+            # Top 8
+            st.markdown("**Top 8:**")
+            top8 = sorted(
+                [s for s in event.get("standings", []) if s.get("placement", 99) <= 8],
+                key=lambda s: s.get("placement", 99)
+            )
+            
+            for s in top8:
+                place = s.get("placement", "?")
+                name = s.get("entrant", {}).get("name", "Unknown")
+                medal = {1: "🥇", 2: "🥈", 3: "🥉"}.get(place, f"{place}.")
+                st.write(f"{medal} {name}")
+
 def show_settings_page(data):
     """Page for ranking settings"""
     st.title("⚙️ Ranking Settings")
@@ -805,113 +1337,94 @@ def show_settings_page(data):
         st.success("✅ Settings saved!")
         st.rerun()
 
-def show_head_to_head_page(data):
-    """Page for head-to-head lookup"""
-    st.title("🥊 Head-to-Head")
+def show_aliases_page(data, registry):
+    """Page for managing player aliases"""
+    st.title("🔗 Manage Player Aliases")
     
-    if not data["tournaments"]:
-        st.info("No tournaments added yet.")
-        return
+    st.markdown("""
+    Use this page to manually link player tags that belong to the same person.
     
-    # Get all player names
-    all_players = set()
-    for t in data["tournaments"]:
-        for event in t.get("events", []):
+    The app automatically detects players using Start.gg user IDs, but sometimes 
+    players create new accounts or the ID isn't tracked. Use this to fix those cases.
+    """)
+    
+    st.markdown("---")
+    
+    # Show current aliases
+    current_aliases = data.get("player_aliases", {})
+    
+    st.subheader("📋 Current Aliases")
+    
+    if current_aliases:
+        for display_name, aliases in current_aliases.items():
+            col1, col2, col3 = st.columns([2, 3, 1])
+            with col1:
+                st.write(f"**{display_name}**")
+            with col2:
+                st.write(f"= {', '.join(aliases)}")
+            with col3:
+                if st.button("🗑️", key=f"del_alias_{display_name}"):
+                    del data["player_aliases"][display_name]
+                    save_data(data)
+                    st.rerun()
+    else:
+        st.info("No manual aliases configured.")
+    
+    st.markdown("---")
+    
+    # Add new alias
+    st.subheader("➕ Add Alias")
+    
+    # Get all known names
+    all_names = set()
+    for tourney in data["tournaments"]:
+        for event in tourney.get("events", []):
             for standing in event.get("standings", []):
-                if standing.get("entrant"):
-                    all_players.add(standing["entrant"]["name"])
+                entrant = standing.get("entrant") or {}
+                if entrant.get("name"):
+                    all_names.add(entrant["name"])
     
-    all_players = sorted(list(all_players))
-    
-    if len(all_players) < 2:
-        st.warning("Need at least 2 players for head-to-head.")
-        return
+    all_names = sorted(list(all_names))
     
     col1, col2 = st.columns(2)
     
     with col1:
-        player1 = st.selectbox("Player 1", all_players, key="p1")
+        primary_name = st.selectbox(
+            "Primary name (to display):",
+            [""] + all_names,
+            help="This is the name that will be shown in rankings"
+        )
     
     with col2:
-        player2 = st.selectbox("Player 2", [p for p in all_players if p != player1], key="p2")
+        # Filter out the primary name
+        available_aliases = [n for n in all_names if n != primary_name]
+        alias_names = st.multiselect(
+            "Aliases (same person):",
+            available_aliases,
+            help="Select all other tags this player uses"
+        )
     
-    if player1 and player2:
-        h2h = get_head_to_head(data["tournaments"], player1, player2)
+    if st.button("➕ Add Alias", disabled=not primary_name or not alias_names):
+        if "player_aliases" not in data:
+            data["player_aliases"] = {}
         
-        st.markdown("---")
-        
-        col1, col2, col3 = st.columns([2, 1, 2])
-        
-        with col1:
-            st.markdown(f"### {player1}")
-            st.metric("Wins", h2h["p1_wins"])
-        
-        with col2:
-            st.markdown("### vs")
-        
-        with col3:
-            st.markdown(f"### {player2}")
-            st.metric("Wins", h2h["p2_wins"])
-        
-        if h2h["sets"]:
-            st.markdown("---")
-            st.subheader("Match History")
-            
-            for match in h2h["sets"]:
-                winner_emoji = "🏆" if match["winner"] == player1 else "🏆"
-                st.write(f"**{match['tournament']}** - {match['round']}")
-                st.write(f"  {match['score']} → {winner_emoji} {match['winner']}")
-        else:
-            st.info("These players haven't faced each other yet.")
-
-def show_tournaments_page(data):
-    """Page showing all tournaments"""
-    st.title("📋 Tournament History")
+        # Merge with existing aliases if any
+        existing = data["player_aliases"].get(primary_name, [])
+        data["player_aliases"][primary_name] = list(set(existing + alias_names))
+        save_data(data)
+        st.success(f"✅ Linked {', '.join(alias_names)} to {primary_name}")
+        st.rerun()
     
-    if not data["tournaments"]:
-        st.info("No tournaments added yet.")
-        return
+    st.markdown("---")
     
-    # Sort by date
-    tournaments = sorted(
-        data["tournaments"],
-        key=lambda t: t["tournament"].get("startAt", 0),
-        reverse=True
-    )
+    # Show auto-detected groups
+    st.subheader("🔍 Auto-Detected Player Groups")
+    st.caption("These are players automatically linked by Start.gg user ID")
     
-    for t in tournaments:
-        tourney = t["tournament"]
-        event = t["events"][0] if t.get("events") else {}
-        
-        date_str = ""
-        if tourney.get("startAt"):
-            date_str = datetime.fromtimestamp(tourney["startAt"]).strftime("%b %d, %Y")
-        
-        with st.expander(f"**{tourney['name']}** {('- ' + date_str) if date_str else ''}"):
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Entrants", event.get("numEntrants", "N/A"))
-            col2.metric("Sets", len(event.get("sets", [])))
-            
-            # Get winner
-            winner = "N/A"
-            for standing in event.get("standings", []):
-                if standing.get("placement") == 1 and standing.get("entrant"):
-                    winner = standing["entrant"]["name"]
-                    break
-            col3.metric("Winner", winner)
-            
-            # Top 8
-            st.markdown("**Top 8:**")
-            top8 = sorted(
-                [s for s in event.get("standings", []) if s.get("placement", 99) <= 8],
-                key=lambda s: s.get("placement", 99)
-            )
-            
-            for s in top8:
-                place = s.get("placement", "?")
-                name = s.get("entrant", {}).get("name", "Unknown")
-                medal = {1: "🥇", 2: "🥈", 3: "🥉"}.get(place, f"{place}.")
-                st.write(f"{medal} {name}")
+    for canonical, profile in registry.get("profiles", {}).items():
+        tags = profile.get("all_tags", [])
+        if len(tags) > 1 and canonical not in current_aliases:
+            st.write(f"**{canonical}**: {', '.join(tags)}")
 
 if __name__ == "__main__":
     main()
