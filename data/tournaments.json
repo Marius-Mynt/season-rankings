@@ -48414,7 +48414,7 @@
     "drop_worst": false,
     "min_tournaments": 1,
     "characters_enabled": true,
-    "ranking_system": "hybrid"
+    "ranking_system": "elo"
   },
   "player_aliases": {},
   "character_names": {
