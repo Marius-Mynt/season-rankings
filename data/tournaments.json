@@ -48397,7 +48397,7 @@
   ],
   "settings": {
     "points": {
-      "1": 100,
+      "1": 150,
       "2": 70,
       "3": 50,
       "4": 40,
@@ -48502,6 +48502,32 @@
   ],
   "active_season": "season_1786356129",
   "activity_log": [
+    {
+      "timestamp": "2026-08-10T10:45:37.576360",
+      "to_name": "Marius",
+      "action": "Updated settings",
+      "details": "No changes",
+      "settings_snapshot": {
+        "points": {
+          "1": 150,
+          "2": 70,
+          "3": 50,
+          "4": 40,
+          "5": 30,
+          "7": 20,
+          "9": 10,
+          "13": 5,
+          "17": 2
+        },
+        "attendance_scaling": false,
+        "scaling_base": 32,
+        "best_n_enabled": false,
+        "best_n": 6,
+        "drop_worst": false,
+        "min_tournaments": 1,
+        "characters_enabled": true
+      }
+    },
     {
       "timestamp": "2026-08-10T10:38:54.793885",
       "to_name": "Anonymous",
