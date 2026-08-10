@@ -23727,6 +23727,2800 @@
           ]
         }
       ]
+    },
+    {
+      "tournament": {
+        "id": 809236,
+        "name": "Toucan's fight club 17",
+        "slug": "toucan-s-fight-club-17",
+        "startAt": 1753606800,
+        "endAt": 1753632000
+      },
+      "events": [
+        {
+          "id": 1419312,
+          "name": "Singles",
+          "numEntrants": 19,
+          "videogame": {
+            "id": 1386,
+            "name": "Super Smash Bros. Ultimate"
+          },
+          "entrants": [
+            {
+              "id": 20811967,
+              "name": "Dr. Gnu",
+              "participants": [
+                {
+                  "id": 19152267,
+                  "gamerTag": "Dr. Gnu",
+                  "prefix": null,
+                  "user": {
+                    "id": 1386519,
+                    "name": "Bruno Tamburini"
+                  }
+                }
+              ]
+            },
+            {
+              "id": 20805067,
+              "name": "dphouse | Diragon",
+              "participants": [
+                {
+                  "id": 19146905,
+                  "gamerTag": "Diragon",
+                  "prefix": "dphouse",
+                  "user": {
+                    "id": 104194,
+                    "name": "Diego Contaldi"
+                  }
+                }
+              ]
+            },
+            {
+              "id": 20804876,
+              "name": "Dark",
+              "participants": [
+                {
+                  "id": 19146763,
+                  "gamerTag": "Dark",
+                  "prefix": null,
+                  "user": {
+                    "id": 3116221,
+                    "name": null
+                  }
+                }
+              ]
+            },
+            {
+              "id": 20804868,
+              "name": "Entony",
+              "participants": [
+                {
+                  "id": 19146770,
+                  "gamerTag": "Entony",
+                  "prefix": "",
+                  "user": {
+                    "id": 3116222,
+                    "name": null
+                  }
+                }
+              ]
+            },
+            {
+              "id": 20795315,
+              "name": "Wolflink",
+              "participants": [
+                {
+                  "id": 19138298,
+                  "gamerTag": "Wolflink",
+                  "prefix": "",
+                  "user": {
+                    "id": 331721,
+                    "name": "Alessandro Scarano"
+                  }
+                }
+              ]
+            },
+            {
+              "id": 20794425,
+              "name": "Clavis | Raicuta",
+              "participants": [
+                {
+                  "id": 19137433,
+                  "gamerTag": "Raicuta",
+                  "prefix": "Clavis",
+                  "user": {
+                    "id": 997771,
+                    "name": "Eugenio Sommella"
+                  }
+                }
+              ]
+            },
+            {
+              "id": 20794418,
+              "name": "Carticax",
+              "participants": [
+                {
+                  "id": 19137426,
+                  "gamerTag": "Carticax",
+                  "prefix": "",
+                  "user": {
+                    "id": 842869,
+                    "name": "Alessandro Coppola"
+                  }
+                }
+              ]
+            },
+            {
+              "id": 20786664,
+              "name": "Yungnils",
+              "participants": [
+                {
+                  "id": 19130239,
+                  "gamerTag": "Yungnils",
+                  "prefix": "",
+                  "user": {
+                    "id": 3114133,
+                    "name": null
+                  }
+                }
+              ]
+            },
+            {
+              "id": 20758277,
+              "name": "DUNK | Ryusei",
+              "participants": [
+                {
+                  "id": 19103968,
+                  "gamerTag": "Ryusei",
+                  "prefix": "DUNK",
+                  "user": {
+                    "id": 217291,
+                    "name": "Raffaele Folchetti"
+                  }
+                }
+              ]
+            },
+            {
+              "id": 20755019,
+              "name": "Margi",
+              "participants": [
+                {
+                  "id": 19100664,
+                  "gamerTag": "Margi",
+                  "prefix": "",
+                  "user": {
+                    "id": 767755,
+                    "name": "Valeria Moriello"
+                  }
+                }
+              ]
+            },
+            {
+              "id": 20741813,
+              "name": "Ciroe494",
+              "participants": [
+                {
+                  "id": 19087796,
+                  "gamerTag": "Ciroe494",
+                  "prefix": null,
+                  "user": {
+                    "id": 3105894,
+                    "name": null
+                  }
+                }
+              ]
+            },
+            {
+              "id": 20718295,
+              "name": "Otrebor",
+              "participants": [
+                {
+                  "id": 19067597,
+                  "gamerTag": "Otrebor",
+                  "prefix": "",
+                  "user": {
+                    "id": 33703,
+                    "name": "Roberto P."
+                  }
+                }
+              ]
+            },
+            {
+              "id": 20709052,
+              "name": "Ike003",
+              "participants": [
+                {
+                  "id": 19059689,
+                  "gamerTag": "Ike003",
+                  "prefix": "",
+                  "user": {
+                    "id": 1161923,
+                    "name": null
+                  }
+                }
+              ]
+            },
+            {
+              "id": 20708283,
+              "name": "Ealot Van Zieks",
+              "participants": [
+                {
+                  "id": 19059004,
+                  "gamerTag": "Ealot Van Zieks",
+                  "prefix": null,
+                  "user": {
+                    "id": 1536443,
+                    "name": null
+                  }
+                }
+              ]
+            },
+            {
+              "id": 20708081,
+              "name": "Marius",
+              "participants": [
+                {
+                  "id": 19058826,
+                  "gamerTag": "Marius",
+                  "prefix": "",
+                  "user": {
+                    "id": 2907028,
+                    "name": null
+                  }
+                }
+              ]
+            },
+            {
+              "id": 20700458,
+              "name": "Alby",
+              "participants": [
+                {
+                  "id": 19051902,
+                  "gamerTag": "Alby",
+                  "prefix": "",
+                  "user": {
+                    "id": 989738,
+                    "name": "Alberto Marino"
+                  }
+                }
+              ]
+            },
+            {
+              "id": 20700171,
+              "name": "FNS | Giec",
+              "participants": [
+                {
+                  "id": 19051673,
+                  "gamerTag": "Giec",
+                  "prefix": "FNS",
+                  "user": {
+                    "id": 1152751,
+                    "name": null
+                  }
+                }
+              ]
+            },
+            {
+              "id": 20699523,
+              "name": "Kereven",
+              "participants": [
+                {
+                  "id": 19051112,
+                  "gamerTag": "Kereven",
+                  "prefix": "",
+                  "user": {
+                    "id": 1524569,
+                    "name": null
+                  }
+                }
+              ]
+            },
+            {
+              "id": 20699502,
+              "name": "ShS | ggentlemenn",
+              "participants": [
+                {
+                  "id": 19051097,
+                  "gamerTag": "ggentlemenn",
+                  "prefix": "ShS",
+                  "user": {
+                    "id": 818230,
+                    "name": null
+                  }
+                }
+              ]
+            }
+          ],
+          "standings": [
+            {
+              "placement": 1,
+              "entrant": {
+                "id": 20699502,
+                "name": "ShS | ggentlemenn",
+                "participants": [
+                  {
+                    "gamerTag": "ggentlemenn",
+                    "prefix": "ShS",
+                    "user": {
+                      "id": 818230,
+                      "name": null
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "placement": 2,
+              "entrant": {
+                "id": 20794425,
+                "name": "Clavis | Raicuta",
+                "participants": [
+                  {
+                    "gamerTag": "Raicuta",
+                    "prefix": "Clavis",
+                    "user": {
+                      "id": 997771,
+                      "name": "Eugenio Sommella"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "placement": 3,
+              "entrant": {
+                "id": 20805067,
+                "name": "dphouse | Diragon",
+                "participants": [
+                  {
+                    "gamerTag": "Diragon",
+                    "prefix": "dphouse",
+                    "user": {
+                      "id": 104194,
+                      "name": "Diego Contaldi"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "placement": 4,
+              "entrant": {
+                "id": 20718295,
+                "name": "Otrebor",
+                "participants": [
+                  {
+                    "gamerTag": "Otrebor",
+                    "prefix": "",
+                    "user": {
+                      "id": 33703,
+                      "name": "Roberto P."
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "placement": 5,
+              "entrant": {
+                "id": 20700458,
+                "name": "Alby",
+                "participants": [
+                  {
+                    "gamerTag": "Alby",
+                    "prefix": "",
+                    "user": {
+                      "id": 989738,
+                      "name": "Alberto Marino"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "placement": 5,
+              "entrant": {
+                "id": 20700171,
+                "name": "FNS | Giec",
+                "participants": [
+                  {
+                    "gamerTag": "Giec",
+                    "prefix": "FNS",
+                    "user": {
+                      "id": 1152751,
+                      "name": null
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "placement": 7,
+              "entrant": {
+                "id": 20758277,
+                "name": "DUNK | Ryusei",
+                "participants": [
+                  {
+                    "gamerTag": "Ryusei",
+                    "prefix": "DUNK",
+                    "user": {
+                      "id": 217291,
+                      "name": "Raffaele Folchetti"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "placement": 7,
+              "entrant": {
+                "id": 20795315,
+                "name": "Wolflink",
+                "participants": [
+                  {
+                    "gamerTag": "Wolflink",
+                    "prefix": "",
+                    "user": {
+                      "id": 331721,
+                      "name": "Alessandro Scarano"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "placement": 9,
+              "entrant": {
+                "id": 20699523,
+                "name": "Kereven",
+                "participants": [
+                  {
+                    "gamerTag": "Kereven",
+                    "prefix": "",
+                    "user": {
+                      "id": 1524569,
+                      "name": null
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "placement": 9,
+              "entrant": {
+                "id": 20708081,
+                "name": "Marius",
+                "participants": [
+                  {
+                    "gamerTag": "Marius",
+                    "prefix": "",
+                    "user": {
+                      "id": 2907028,
+                      "name": null
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "placement": 9,
+              "entrant": {
+                "id": 20794418,
+                "name": "Carticax",
+                "participants": [
+                  {
+                    "gamerTag": "Carticax",
+                    "prefix": "",
+                    "user": {
+                      "id": 842869,
+                      "name": "Alessandro Coppola"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "placement": 9,
+              "entrant": {
+                "id": 20708283,
+                "name": "Ealot Van Zieks",
+                "participants": [
+                  {
+                    "gamerTag": "Ealot Van Zieks",
+                    "prefix": null,
+                    "user": {
+                      "id": 1536443,
+                      "name": null
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "placement": 13,
+              "entrant": {
+                "id": 20709052,
+                "name": "Ike003",
+                "participants": [
+                  {
+                    "gamerTag": "Ike003",
+                    "prefix": "",
+                    "user": {
+                      "id": 1161923,
+                      "name": null
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "placement": 13,
+              "entrant": {
+                "id": 20755019,
+                "name": "Margi",
+                "participants": [
+                  {
+                    "gamerTag": "Margi",
+                    "prefix": "",
+                    "user": {
+                      "id": 767755,
+                      "name": "Valeria Moriello"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "placement": 13,
+              "entrant": {
+                "id": 20804876,
+                "name": "Dark",
+                "participants": [
+                  {
+                    "gamerTag": "Dark",
+                    "prefix": null,
+                    "user": {
+                      "id": 3116221,
+                      "name": null
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "placement": 13,
+              "entrant": {
+                "id": 20741813,
+                "name": "Ciroe494",
+                "participants": [
+                  {
+                    "gamerTag": "Ciroe494",
+                    "prefix": null,
+                    "user": {
+                      "id": 3105894,
+                      "name": null
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "placement": 17,
+              "entrant": {
+                "id": 20804868,
+                "name": "Entony",
+                "participants": [
+                  {
+                    "gamerTag": "Entony",
+                    "prefix": "",
+                    "user": {
+                      "id": 3116222,
+                      "name": null
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "placement": 17,
+              "entrant": {
+                "id": 20786664,
+                "name": "Yungnils",
+                "participants": [
+                  {
+                    "gamerTag": "Yungnils",
+                    "prefix": "",
+                    "user": {
+                      "id": 3114133,
+                      "name": null
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "placement": 17,
+              "entrant": {
+                "id": 20811967,
+                "name": "Dr. Gnu",
+                "participants": [
+                  {
+                    "gamerTag": "Dr. Gnu",
+                    "prefix": null,
+                    "user": {
+                      "id": 1386519,
+                      "name": "Bruno Tamburini"
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "sets": [
+            {
+              "id": 91942324,
+              "fullRoundText": "Grand Final",
+              "round": 6,
+              "completedAt": 1753635053,
+              "winnerId": 20699502,
+              "displayScore": "ShS | ggentlemenn 3 - Clavis | Raicuta 0",
+              "slots": [
+                {
+                  "id": "91942324-0",
+                  "entrant": {
+                    "id": 20699502,
+                    "name": "ShS | ggentlemenn",
+                    "participants": [
+                      {
+                        "gamerTag": "ggentlemenn",
+                        "prefix": "ShS",
+                        "user": {
+                          "id": 818230
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942324-1",
+                  "entrant": {
+                    "id": 20794425,
+                    "name": "Clavis | Raicuta",
+                    "participants": [
+                      {
+                        "gamerTag": "Raicuta",
+                        "prefix": "Clavis",
+                        "user": {
+                          "id": 997771
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 0
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942323,
+              "fullRoundText": "Winners Final",
+              "round": 5,
+              "completedAt": 1753621999,
+              "winnerId": 20699502,
+              "displayScore": "ShS | ggentlemenn 3 - dphouse | Diragon 0",
+              "slots": [
+                {
+                  "id": "91942323-0",
+                  "entrant": {
+                    "id": 20699502,
+                    "name": "ShS | ggentlemenn",
+                    "participants": [
+                      {
+                        "gamerTag": "ggentlemenn",
+                        "prefix": "ShS",
+                        "user": {
+                          "id": 818230
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942323-1",
+                  "entrant": {
+                    "id": 20805067,
+                    "name": "dphouse | Diragon",
+                    "participants": [
+                      {
+                        "gamerTag": "Diragon",
+                        "prefix": "dphouse",
+                        "user": {
+                          "id": 104194
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 0
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942387,
+              "fullRoundText": "Losers Final",
+              "round": -10,
+              "completedAt": 1753635030,
+              "winnerId": 20794425,
+              "displayScore": "dphouse | Diragon 2 - Clavis | Raicuta 3",
+              "slots": [
+                {
+                  "id": "91942387-0",
+                  "entrant": {
+                    "id": 20805067,
+                    "name": "dphouse | Diragon",
+                    "participants": [
+                      {
+                        "gamerTag": "Diragon",
+                        "prefix": "dphouse",
+                        "user": {
+                          "id": 104194
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942387-1",
+                  "entrant": {
+                    "id": 20794425,
+                    "name": "Clavis | Raicuta",
+                    "participants": [
+                      {
+                        "gamerTag": "Raicuta",
+                        "prefix": "Clavis",
+                        "user": {
+                          "id": 997771
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942386,
+              "fullRoundText": "Losers Semi-Final",
+              "round": -9,
+              "completedAt": 1753626123,
+              "winnerId": 20794425,
+              "displayScore": "Otrebor 0 - Clavis | Raicuta 3",
+              "slots": [
+                {
+                  "id": "91942386-0",
+                  "entrant": {
+                    "id": 20718295,
+                    "name": "Otrebor",
+                    "participants": [
+                      {
+                        "gamerTag": "Otrebor",
+                        "prefix": "",
+                        "user": {
+                          "id": 33703
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 0
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942386-1",
+                  "entrant": {
+                    "id": 20794425,
+                    "name": "Clavis | Raicuta",
+                    "participants": [
+                      {
+                        "gamerTag": "Raicuta",
+                        "prefix": "Clavis",
+                        "user": {
+                          "id": 997771
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942321,
+              "fullRoundText": "Winners Semi-Final",
+              "round": 4,
+              "completedAt": 1753620695,
+              "winnerId": 20699502,
+              "displayScore": "ShS | ggentlemenn 3 - Clavis | Raicuta 0",
+              "slots": [
+                {
+                  "id": "91942321-0",
+                  "entrant": {
+                    "id": 20699502,
+                    "name": "ShS | ggentlemenn",
+                    "participants": [
+                      {
+                        "gamerTag": "ggentlemenn",
+                        "prefix": "ShS",
+                        "user": {
+                          "id": 818230
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942321-1",
+                  "entrant": {
+                    "id": 20794425,
+                    "name": "Clavis | Raicuta",
+                    "participants": [
+                      {
+                        "gamerTag": "Raicuta",
+                        "prefix": "Clavis",
+                        "user": {
+                          "id": 997771
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 0
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942322,
+              "fullRoundText": "Winners Semi-Final",
+              "round": 4,
+              "completedAt": 1753621111,
+              "winnerId": 20805067,
+              "displayScore": "dphouse | Diragon 3 - Otrebor 1",
+              "slots": [
+                {
+                  "id": "91942322-0",
+                  "entrant": {
+                    "id": 20805067,
+                    "name": "dphouse | Diragon",
+                    "participants": [
+                      {
+                        "gamerTag": "Diragon",
+                        "prefix": "dphouse",
+                        "user": {
+                          "id": 104194
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942322-1",
+                  "entrant": {
+                    "id": 20718295,
+                    "name": "Otrebor",
+                    "participants": [
+                      {
+                        "gamerTag": "Otrebor",
+                        "prefix": "",
+                        "user": {
+                          "id": 33703
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 1
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942384,
+              "fullRoundText": "Losers Quarter-Final",
+              "round": -8,
+              "completedAt": 1753625002,
+              "winnerId": 20718295,
+              "displayScore": "Otrebor 3 - FNS | Giec 0",
+              "slots": [
+                {
+                  "id": "91942384-0",
+                  "entrant": {
+                    "id": 20718295,
+                    "name": "Otrebor",
+                    "participants": [
+                      {
+                        "gamerTag": "Otrebor",
+                        "prefix": "",
+                        "user": {
+                          "id": 33703
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942384-1",
+                  "entrant": {
+                    "id": 20700171,
+                    "name": "FNS | Giec",
+                    "participants": [
+                      {
+                        "gamerTag": "Giec",
+                        "prefix": "FNS",
+                        "user": {
+                          "id": 1152751
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 0
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942385,
+              "fullRoundText": "Losers Quarter-Final",
+              "round": -8,
+              "completedAt": 1753625096,
+              "winnerId": 20794425,
+              "displayScore": "Clavis | Raicuta 3 - Alby 2",
+              "slots": [
+                {
+                  "id": "91942385-0",
+                  "entrant": {
+                    "id": 20794425,
+                    "name": "Clavis | Raicuta",
+                    "participants": [
+                      {
+                        "gamerTag": "Raicuta",
+                        "prefix": "Clavis",
+                        "user": {
+                          "id": 997771
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942385-1",
+                  "entrant": {
+                    "id": 20700458,
+                    "name": "Alby",
+                    "participants": [
+                      {
+                        "gamerTag": "Alby",
+                        "prefix": "",
+                        "user": {
+                          "id": 989738
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 2
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942382,
+              "fullRoundText": "Losers Round 4",
+              "round": -7,
+              "completedAt": 1753624981,
+              "winnerId": 20700171,
+              "displayScore": "FNS | Giec 3 - Wolflink 0",
+              "slots": [
+                {
+                  "id": "91942382-0",
+                  "entrant": {
+                    "id": 20700171,
+                    "name": "FNS | Giec",
+                    "participants": [
+                      {
+                        "gamerTag": "Giec",
+                        "prefix": "FNS",
+                        "user": {
+                          "id": 1152751
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942382-1",
+                  "entrant": {
+                    "id": 20795315,
+                    "name": "Wolflink",
+                    "participants": [
+                      {
+                        "gamerTag": "Wolflink",
+                        "prefix": "",
+                        "user": {
+                          "id": 331721
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 0
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942383,
+              "fullRoundText": "Losers Round 4",
+              "round": -7,
+              "completedAt": 1753623372,
+              "winnerId": 20700458,
+              "displayScore": "DUNK | Ryusei 2 - Alby 3",
+              "slots": [
+                {
+                  "id": "91942383-0",
+                  "entrant": {
+                    "id": 20758277,
+                    "name": "DUNK | Ryusei",
+                    "participants": [
+                      {
+                        "gamerTag": "Ryusei",
+                        "prefix": "DUNK",
+                        "user": {
+                          "id": 217291
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942383-1",
+                  "entrant": {
+                    "id": 20700458,
+                    "name": "Alby",
+                    "participants": [
+                      {
+                        "gamerTag": "Alby",
+                        "prefix": "",
+                        "user": {
+                          "id": 989738
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942317,
+              "fullRoundText": "Winners Quarter-Final",
+              "round": 3,
+              "completedAt": 1753615892,
+              "winnerId": 20699502,
+              "displayScore": "ShS | ggentlemenn 3 - Wolflink 0",
+              "slots": [
+                {
+                  "id": "91942317-0",
+                  "entrant": {
+                    "id": 20699502,
+                    "name": "ShS | ggentlemenn",
+                    "participants": [
+                      {
+                        "gamerTag": "ggentlemenn",
+                        "prefix": "ShS",
+                        "user": {
+                          "id": 818230
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942317-1",
+                  "entrant": {
+                    "id": 20795315,
+                    "name": "Wolflink",
+                    "participants": [
+                      {
+                        "gamerTag": "Wolflink",
+                        "prefix": "",
+                        "user": {
+                          "id": 331721
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 0
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942318,
+              "fullRoundText": "Winners Quarter-Final",
+              "round": 3,
+              "completedAt": 1753615113,
+              "winnerId": 20794425,
+              "displayScore": "Clavis | Raicuta 3 - FNS | Giec 2",
+              "slots": [
+                {
+                  "id": "91942318-0",
+                  "entrant": {
+                    "id": 20794425,
+                    "name": "Clavis | Raicuta",
+                    "participants": [
+                      {
+                        "gamerTag": "Raicuta",
+                        "prefix": "Clavis",
+                        "user": {
+                          "id": 997771
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942318-1",
+                  "entrant": {
+                    "id": 20700171,
+                    "name": "FNS | Giec",
+                    "participants": [
+                      {
+                        "gamerTag": "Giec",
+                        "prefix": "FNS",
+                        "user": {
+                          "id": 1152751
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 2
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942319,
+              "fullRoundText": "Winners Quarter-Final",
+              "round": 3,
+              "completedAt": 1753615826,
+              "winnerId": 20805067,
+              "displayScore": "Alby 1 - dphouse | Diragon 3",
+              "slots": [
+                {
+                  "id": "91942319-0",
+                  "entrant": {
+                    "id": 20700458,
+                    "name": "Alby",
+                    "participants": [
+                      {
+                        "gamerTag": "Alby",
+                        "prefix": "",
+                        "user": {
+                          "id": 989738
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 1
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942319-1",
+                  "entrant": {
+                    "id": 20805067,
+                    "name": "dphouse | Diragon",
+                    "participants": [
+                      {
+                        "gamerTag": "Diragon",
+                        "prefix": "dphouse",
+                        "user": {
+                          "id": 104194
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942320,
+              "fullRoundText": "Winners Quarter-Final",
+              "round": 3,
+              "completedAt": 1753615988,
+              "winnerId": 20718295,
+              "displayScore": "DUNK | Ryusei 2 - Otrebor 3",
+              "slots": [
+                {
+                  "id": "91942320-0",
+                  "entrant": {
+                    "id": 20758277,
+                    "name": "DUNK | Ryusei",
+                    "participants": [
+                      {
+                        "gamerTag": "Ryusei",
+                        "prefix": "DUNK",
+                        "user": {
+                          "id": 217291
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942320-1",
+                  "entrant": {
+                    "id": 20718295,
+                    "name": "Otrebor",
+                    "participants": [
+                      {
+                        "gamerTag": "Otrebor",
+                        "prefix": "",
+                        "user": {
+                          "id": 33703
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942378,
+              "fullRoundText": "Losers Round 3",
+              "round": -6,
+              "completedAt": 1753620762,
+              "winnerId": 20700171,
+              "displayScore": "FNS | Giec 3 - Ealot Van Zieks 1",
+              "slots": [
+                {
+                  "id": "91942378-0",
+                  "entrant": {
+                    "id": 20700171,
+                    "name": "FNS | Giec",
+                    "participants": [
+                      {
+                        "gamerTag": "Giec",
+                        "prefix": "FNS",
+                        "user": {
+                          "id": 1152751
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942378-1",
+                  "entrant": {
+                    "id": 20708283,
+                    "name": "Ealot Van Zieks",
+                    "participants": [
+                      {
+                        "gamerTag": "Ealot Van Zieks",
+                        "prefix": null,
+                        "user": {
+                          "id": 1536443
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 1
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942379,
+              "fullRoundText": "Losers Round 3",
+              "round": -6,
+              "completedAt": 1753622132,
+              "winnerId": 20795315,
+              "displayScore": "Wolflink 3 - Kereven 2",
+              "slots": [
+                {
+                  "id": "91942379-0",
+                  "entrant": {
+                    "id": 20795315,
+                    "name": "Wolflink",
+                    "participants": [
+                      {
+                        "gamerTag": "Wolflink",
+                        "prefix": "",
+                        "user": {
+                          "id": 331721
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942379-1",
+                  "entrant": {
+                    "id": 20699523,
+                    "name": "Kereven",
+                    "participants": [
+                      {
+                        "gamerTag": "Kereven",
+                        "prefix": "",
+                        "user": {
+                          "id": 1524569
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 2
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942380,
+              "fullRoundText": "Losers Round 3",
+              "round": -6,
+              "completedAt": 1753620652,
+              "winnerId": 20758277,
+              "displayScore": "DUNK | Ryusei 3 - Carticax 1",
+              "slots": [
+                {
+                  "id": "91942380-0",
+                  "entrant": {
+                    "id": 20758277,
+                    "name": "DUNK | Ryusei",
+                    "participants": [
+                      {
+                        "gamerTag": "Ryusei",
+                        "prefix": "DUNK",
+                        "user": {
+                          "id": 217291
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942380-1",
+                  "entrant": {
+                    "id": 20794418,
+                    "name": "Carticax",
+                    "participants": [
+                      {
+                        "gamerTag": "Carticax",
+                        "prefix": "",
+                        "user": {
+                          "id": 842869
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 1
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942381,
+              "fullRoundText": "Losers Round 3",
+              "round": -6,
+              "completedAt": 1753621612,
+              "winnerId": 20700458,
+              "displayScore": "Alby 3 - Marius 0",
+              "slots": [
+                {
+                  "id": "91942381-0",
+                  "entrant": {
+                    "id": 20700458,
+                    "name": "Alby",
+                    "participants": [
+                      {
+                        "gamerTag": "Alby",
+                        "prefix": "",
+                        "user": {
+                          "id": 989738
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942381-1",
+                  "entrant": {
+                    "id": 20708081,
+                    "name": "Marius",
+                    "participants": [
+                      {
+                        "gamerTag": "Marius",
+                        "prefix": "",
+                        "user": {
+                          "id": 2907028
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 0
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942377,
+              "fullRoundText": "Losers Round 2",
+              "round": -5,
+              "completedAt": 1753615859,
+              "winnerId": 20708081,
+              "displayScore": "Marius 3 - Dark 0",
+              "slots": [
+                {
+                  "id": "91942377-0",
+                  "entrant": {
+                    "id": 20708081,
+                    "name": "Marius",
+                    "participants": [
+                      {
+                        "gamerTag": "Marius",
+                        "prefix": "",
+                        "user": {
+                          "id": 2907028
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942377-1",
+                  "entrant": {
+                    "id": 20804876,
+                    "name": "Dark",
+                    "participants": [
+                      {
+                        "gamerTag": "Dark",
+                        "prefix": null,
+                        "user": {
+                          "id": 3116221
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 0
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942374,
+              "fullRoundText": "Losers Round 2",
+              "round": -5,
+              "completedAt": 1753615539,
+              "winnerId": 20708283,
+              "displayScore": "Ealot Van Zieks 3 - Ciroe494 0",
+              "slots": [
+                {
+                  "id": "91942374-0",
+                  "entrant": {
+                    "id": 20708283,
+                    "name": "Ealot Van Zieks",
+                    "participants": [
+                      {
+                        "gamerTag": "Ealot Van Zieks",
+                        "prefix": null,
+                        "user": {
+                          "id": 1536443
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942374-1",
+                  "entrant": {
+                    "id": 20741813,
+                    "name": "Ciroe494",
+                    "participants": [
+                      {
+                        "gamerTag": "Ciroe494",
+                        "prefix": null,
+                        "user": {
+                          "id": 3105894
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 0
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942375,
+              "fullRoundText": "Losers Round 2",
+              "round": -5,
+              "completedAt": 1753615784,
+              "winnerId": 20699523,
+              "displayScore": "Margi 0 - Kereven 3",
+              "slots": [
+                {
+                  "id": "91942375-0",
+                  "entrant": {
+                    "id": 20755019,
+                    "name": "Margi",
+                    "participants": [
+                      {
+                        "gamerTag": "Margi",
+                        "prefix": "",
+                        "user": {
+                          "id": 767755
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 0
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942375-1",
+                  "entrant": {
+                    "id": 20699523,
+                    "name": "Kereven",
+                    "participants": [
+                      {
+                        "gamerTag": "Kereven",
+                        "prefix": "",
+                        "user": {
+                          "id": 1524569
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942376,
+              "fullRoundText": "Losers Round 2",
+              "round": -5,
+              "completedAt": 1753614616,
+              "winnerId": 20794418,
+              "displayScore": "Carticax 3 - Ike003 1",
+              "slots": [
+                {
+                  "id": "91942376-0",
+                  "entrant": {
+                    "id": 20794418,
+                    "name": "Carticax",
+                    "participants": [
+                      {
+                        "gamerTag": "Carticax",
+                        "prefix": "",
+                        "user": {
+                          "id": 842869
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942376-1",
+                  "entrant": {
+                    "id": 20709052,
+                    "name": "Ike003",
+                    "participants": [
+                      {
+                        "gamerTag": "Ike003",
+                        "prefix": "",
+                        "user": {
+                          "id": 1161923
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 1
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942309,
+              "fullRoundText": "Winners Round 2",
+              "round": 2,
+              "completedAt": 1753614761,
+              "winnerId": 20699502,
+              "displayScore": "ShS | ggentlemenn 3 - Dark 0",
+              "slots": [
+                {
+                  "id": "91942309-0",
+                  "entrant": {
+                    "id": 20699502,
+                    "name": "ShS | ggentlemenn",
+                    "participants": [
+                      {
+                        "gamerTag": "ggentlemenn",
+                        "prefix": "ShS",
+                        "user": {
+                          "id": 818230
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942309-1",
+                  "entrant": {
+                    "id": 20804876,
+                    "name": "Dark",
+                    "participants": [
+                      {
+                        "gamerTag": "Dark",
+                        "prefix": null,
+                        "user": {
+                          "id": 3116221
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 0
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942310,
+              "fullRoundText": "Winners Round 2",
+              "round": 2,
+              "completedAt": 1753612724,
+              "winnerId": 20795315,
+              "displayScore": "Marius 0 - Wolflink 3",
+              "slots": [
+                {
+                  "id": "91942310-0",
+                  "entrant": {
+                    "id": 20708081,
+                    "name": "Marius",
+                    "participants": [
+                      {
+                        "gamerTag": "Marius",
+                        "prefix": "",
+                        "user": {
+                          "id": 2907028
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 0
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942310-1",
+                  "entrant": {
+                    "id": 20795315,
+                    "name": "Wolflink",
+                    "participants": [
+                      {
+                        "gamerTag": "Wolflink",
+                        "prefix": "",
+                        "user": {
+                          "id": 331721
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942311,
+              "fullRoundText": "Winners Round 2",
+              "round": 2,
+              "completedAt": 1753613035,
+              "winnerId": 20794425,
+              "displayScore": "Clavis | Raicuta 3 - Ike003 0",
+              "slots": [
+                {
+                  "id": "91942311-0",
+                  "entrant": {
+                    "id": 20794425,
+                    "name": "Clavis | Raicuta",
+                    "participants": [
+                      {
+                        "gamerTag": "Raicuta",
+                        "prefix": "Clavis",
+                        "user": {
+                          "id": 997771
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942311-1",
+                  "entrant": {
+                    "id": 20709052,
+                    "name": "Ike003",
+                    "participants": [
+                      {
+                        "gamerTag": "Ike003",
+                        "prefix": "",
+                        "user": {
+                          "id": 1161923
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 0
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942312,
+              "fullRoundText": "Winners Round 2",
+              "round": 2,
+              "completedAt": 1753612754,
+              "winnerId": 20700171,
+              "displayScore": "FNS | Giec 3 - Carticax 0",
+              "slots": [
+                {
+                  "id": "91942312-0",
+                  "entrant": {
+                    "id": 20700171,
+                    "name": "FNS | Giec",
+                    "participants": [
+                      {
+                        "gamerTag": "Giec",
+                        "prefix": "FNS",
+                        "user": {
+                          "id": 1152751
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942312-1",
+                  "entrant": {
+                    "id": 20794418,
+                    "name": "Carticax",
+                    "participants": [
+                      {
+                        "gamerTag": "Carticax",
+                        "prefix": "",
+                        "user": {
+                          "id": 842869
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 0
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942313,
+              "fullRoundText": "Winners Round 2",
+              "round": 2,
+              "completedAt": 1753614382,
+              "winnerId": 20700458,
+              "displayScore": "Alby 3 - Kereven 0",
+              "slots": [
+                {
+                  "id": "91942313-0",
+                  "entrant": {
+                    "id": 20700458,
+                    "name": "Alby",
+                    "participants": [
+                      {
+                        "gamerTag": "Alby",
+                        "prefix": "",
+                        "user": {
+                          "id": 989738
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942313-1",
+                  "entrant": {
+                    "id": 20699523,
+                    "name": "Kereven",
+                    "participants": [
+                      {
+                        "gamerTag": "Kereven",
+                        "prefix": "",
+                        "user": {
+                          "id": 1524569
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 0
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942314,
+              "fullRoundText": "Winners Round 2",
+              "round": 2,
+              "completedAt": 1753612781,
+              "winnerId": 20805067,
+              "displayScore": "dphouse | Diragon 3 - Margi 0",
+              "slots": [
+                {
+                  "id": "91942314-0",
+                  "entrant": {
+                    "id": 20805067,
+                    "name": "dphouse | Diragon",
+                    "participants": [
+                      {
+                        "gamerTag": "Diragon",
+                        "prefix": "dphouse",
+                        "user": {
+                          "id": 104194
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942314-1",
+                  "entrant": {
+                    "id": 20755019,
+                    "name": "Margi",
+                    "participants": [
+                      {
+                        "gamerTag": "Margi",
+                        "prefix": "",
+                        "user": {
+                          "id": 767755
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 0
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942315,
+              "fullRoundText": "Winners Round 2",
+              "round": 2,
+              "completedAt": 1753614427,
+              "winnerId": 20758277,
+              "displayScore": "DUNK | Ryusei 3 - Ciroe494 1",
+              "slots": [
+                {
+                  "id": "91942315-0",
+                  "entrant": {
+                    "id": 20758277,
+                    "name": "DUNK | Ryusei",
+                    "participants": [
+                      {
+                        "gamerTag": "Ryusei",
+                        "prefix": "DUNK",
+                        "user": {
+                          "id": 217291
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942315-1",
+                  "entrant": {
+                    "id": 20741813,
+                    "name": "Ciroe494",
+                    "participants": [
+                      {
+                        "gamerTag": "Ciroe494",
+                        "prefix": null,
+                        "user": {
+                          "id": 3105894
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 1
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942316,
+              "fullRoundText": "Winners Round 2",
+              "round": 2,
+              "completedAt": 1753612498,
+              "winnerId": 20718295,
+              "displayScore": "Otrebor 3 - Ealot Van Zieks 0",
+              "slots": [
+                {
+                  "id": "91942316-0",
+                  "entrant": {
+                    "id": 20718295,
+                    "name": "Otrebor",
+                    "participants": [
+                      {
+                        "gamerTag": "Otrebor",
+                        "prefix": "",
+                        "user": {
+                          "id": 33703
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942316-1",
+                  "entrant": {
+                    "id": 20708283,
+                    "name": "Ealot Van Zieks",
+                    "participants": [
+                      {
+                        "gamerTag": "Ealot Van Zieks",
+                        "prefix": null,
+                        "user": {
+                          "id": 1536443
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 0
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942366,
+              "fullRoundText": "Losers Round 1",
+              "round": -4,
+              "completedAt": 1753614465,
+              "winnerId": 20708283,
+              "displayScore": "Ealot Van Zieks 3 - Entony 0",
+              "slots": [
+                {
+                  "id": "91942366-0",
+                  "entrant": {
+                    "id": 20708283,
+                    "name": "Ealot Van Zieks",
+                    "participants": [
+                      {
+                        "gamerTag": "Ealot Van Zieks",
+                        "prefix": null,
+                        "user": {
+                          "id": 1536443
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942366-1",
+                  "entrant": {
+                    "id": 20804868,
+                    "name": "Entony",
+                    "participants": [
+                      {
+                        "gamerTag": "Entony",
+                        "prefix": "",
+                        "user": {
+                          "id": 3116222
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 0
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942370,
+              "fullRoundText": "Losers Round 1",
+              "round": -4,
+              "completedAt": 1753613359,
+              "winnerId": 20794418,
+              "displayScore": "DQ",
+              "slots": [
+                {
+                  "id": "91942370-0",
+                  "entrant": {
+                    "id": 20794418,
+                    "name": "Carticax",
+                    "participants": [
+                      {
+                        "gamerTag": "Carticax",
+                        "prefix": "",
+                        "user": {
+                          "id": 842869
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": null
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942370-1",
+                  "entrant": {
+                    "id": 20786664,
+                    "name": "Yungnils",
+                    "participants": [
+                      {
+                        "gamerTag": "Yungnils",
+                        "prefix": "",
+                        "user": {
+                          "id": 3114133
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": -1
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942372,
+              "fullRoundText": "Losers Round 1",
+              "round": -4,
+              "completedAt": 1753613101,
+              "winnerId": 20708081,
+              "displayScore": "DQ",
+              "slots": [
+                {
+                  "id": "91942372-0",
+                  "entrant": {
+                    "id": 20708081,
+                    "name": "Marius",
+                    "participants": [
+                      {
+                        "gamerTag": "Marius",
+                        "prefix": "",
+                        "user": {
+                          "id": 2907028
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": null
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942372-1",
+                  "entrant": {
+                    "id": 20811967,
+                    "name": "Dr. Gnu",
+                    "participants": [
+                      {
+                        "gamerTag": "Dr. Gnu",
+                        "prefix": null,
+                        "user": {
+                          "id": 1386519
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": -1
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942294,
+              "fullRoundText": "Winners Round 1",
+              "round": 1,
+              "completedAt": 1753613307,
+              "winnerId": 20804876,
+              "displayScore": "Entony 2 - Dark 3",
+              "slots": [
+                {
+                  "id": "91942294-0",
+                  "entrant": {
+                    "id": 20804868,
+                    "name": "Entony",
+                    "participants": [
+                      {
+                        "gamerTag": "Entony",
+                        "prefix": "",
+                        "user": {
+                          "id": 3116222
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942294-1",
+                  "entrant": {
+                    "id": 20804876,
+                    "name": "Dark",
+                    "participants": [
+                      {
+                        "gamerTag": "Dark",
+                        "prefix": null,
+                        "user": {
+                          "id": 3116221
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": 3
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942302,
+              "fullRoundText": "Winners Round 1",
+              "round": 1,
+              "completedAt": 1753613083,
+              "winnerId": 20699523,
+              "displayScore": "DQ",
+              "slots": [
+                {
+                  "id": "91942302-0",
+                  "entrant": {
+                    "id": 20786664,
+                    "name": "Yungnils",
+                    "participants": [
+                      {
+                        "gamerTag": "Yungnils",
+                        "prefix": "",
+                        "user": {
+                          "id": 3114133
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": -1
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942302-1",
+                  "entrant": {
+                    "id": 20699523,
+                    "name": "Kereven",
+                    "participants": [
+                      {
+                        "gamerTag": "Kereven",
+                        "prefix": "",
+                        "user": {
+                          "id": 1524569
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": null
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            },
+            {
+              "id": 91942306,
+              "fullRoundText": "Winners Round 1",
+              "round": 1,
+              "completedAt": 1753612509,
+              "winnerId": 20741813,
+              "displayScore": "DQ",
+              "slots": [
+                {
+                  "id": "91942306-0",
+                  "entrant": {
+                    "id": 20741813,
+                    "name": "Ciroe494",
+                    "participants": [
+                      {
+                        "gamerTag": "Ciroe494",
+                        "prefix": null,
+                        "user": {
+                          "id": 3105894
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 1,
+                    "stats": {
+                      "score": {
+                        "value": null
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91942306-1",
+                  "entrant": {
+                    "id": 20811967,
+                    "name": "Dr. Gnu",
+                    "participants": [
+                      {
+                        "gamerTag": "Dr. Gnu",
+                        "prefix": null,
+                        "user": {
+                          "id": 1386519
+                        }
+                      }
+                    ]
+                  },
+                  "standing": {
+                    "placement": 2,
+                    "stats": {
+                      "score": {
+                        "value": -1
+                      }
+                    }
+                  }
+                }
+              ],
+              "phaseName": "Bracket",
+              "phaseGroupName": "1"
+            }
+          ]
+        }
+      ]
     }
   ],
   "settings": {
