@@ -1594,7 +1594,12 @@ def show_add_tournament_page(data):
     
     url = st.text_input("Tournament URL", placeholder="https://www.start.gg/tournament/your-tournament/events", label_visibility="collapsed")
     
-    if st.button("➕ Add Tournament", type="primary", disabled=not url):
+    to_name = get_to_name()
+    
+    if not to_name:
+        st.warning("⚠️ Please enter your name in the sidebar before adding tournaments.")
+        st.button("➕ Add Tournament", type="primary", disabled=True)
+    elif st.button("➕ Add Tournament", type="primary", disabled=not url):
         with st.spinner("Importing tournament..."):
             try:
                 progress = st.empty()
@@ -1835,7 +1840,12 @@ def show_seasons_page(data, registry):
             options=list(tournament_options.keys())
         )
     
-    if st.button("➕ Create Season", disabled=not season_name or not selected_tournaments):
+    to_name = get_to_name()
+    
+    if not to_name:
+        st.warning("⚠️ Please enter your name in the sidebar before creating seasons.")
+        st.button("➕ Create Season", disabled=True)
+    elif st.button("➕ Create Season", disabled=not season_name or not selected_tournaments):
         tournament_ids = [tournament_options[name] for name in selected_tournaments]
         create_season(data, season_name, tournament_ids)
         log_activity(data, "Created season", f"{season_name} ({len(tournament_ids)} tournaments)")
@@ -2089,32 +2099,67 @@ def show_settings_page(data):
     
     st.markdown("---")
     
-    if st.button("💾 Save Settings", type="primary"):
-        # Build change summary
-        old_settings = data.get("settings", {})
+    # Check if TO name is set
+    to_name = get_to_name()
+    
+    if not to_name:
+        st.warning("⚠️ Please enter your name in the sidebar before saving changes.")
+        st.button("💾 Save Settings", type="primary", disabled=True)
+    elif st.button("💾 Save Settings", type="primary"):
+        # Build detailed change summary
+        old_settings = data.get("settings", get_default_settings())
         changes = []
         
-        if old_settings.get("attendance_scaling") != settings.get("attendance_scaling"):
-            changes.append(f"attendance scaling: {'on' if settings.get('attendance_scaling') else 'off'}")
-        if old_settings.get("drop_worst") != settings.get("drop_worst"):
-            changes.append(f"drop worst: {'on' if settings.get('drop_worst') else 'off'}")
-        if old_settings.get("best_n_enabled") != settings.get("best_n_enabled"):
-            changes.append(f"best N: {'on' if settings.get('best_n_enabled') else 'off'}")
-        if old_settings.get("characters_enabled") != settings.get("characters_enabled"):
-            changes.append(f"characters: {'on' if settings.get('characters_enabled') else 'off'}")
-        if old_settings.get("min_tournaments") != settings.get("min_tournaments"):
-            changes.append(f"min tournaments: {settings.get('min_tournaments')}")
+        # Check each setting
+        if old_settings.get("points") != settings.get("points"):
+            old_pts = old_settings.get("points", {})
+            new_pts = settings.get("points", {})
+            pts_changes = []
+            for place in ["1", "2", "3", "4", "5", "7", "9", "13", "17"]:
+                if old_pts.get(place) != new_pts.get(place):
+                    pts_changes.append(f"#{place}: {old_pts.get(place, '?')}→{new_pts.get(place, '?')}")
+            if pts_changes:
+                changes.append(f"Points: {', '.join(pts_changes)}")
         
-        # Check points changes
-        old_points = old_settings.get("points", {})
-        new_points = settings.get("points", {})
-        if old_points != new_points:
-            changes.append("points system")
+        if old_settings.get("attendance_scaling") != settings.get("attendance_scaling"):
+            changes.append(f"Attendance scaling: {'OFF→ON' if settings.get('attendance_scaling') else 'ON→OFF'}")
+        
+        if old_settings.get("scaling_base") != settings.get("scaling_base"):
+            changes.append(f"Scaling base: {old_settings.get('scaling_base', '?')}→{settings.get('scaling_base')}")
+        
+        if old_settings.get("drop_worst") != settings.get("drop_worst"):
+            changes.append(f"Drop worst: {'OFF→ON' if settings.get('drop_worst') else 'ON→OFF'}")
+        
+        if old_settings.get("best_n_enabled") != settings.get("best_n_enabled"):
+            changes.append(f"Best N: {'OFF→ON' if settings.get('best_n_enabled') else 'ON→OFF'}")
+        
+        if old_settings.get("best_n") != settings.get("best_n"):
+            changes.append(f"Best N count: {old_settings.get('best_n', '?')}→{settings.get('best_n')}")
+        
+        if old_settings.get("min_tournaments") != settings.get("min_tournaments"):
+            changes.append(f"Min tournaments: {old_settings.get('min_tournaments', '?')}→{settings.get('min_tournaments')}")
+        
+        if old_settings.get("characters_enabled") != settings.get("characters_enabled"):
+            changes.append(f"Characters: {'OFF→ON' if settings.get('characters_enabled') else 'ON→OFF'}")
+        
+        change_summary = "; ".join(changes) if changes else "No changes"
+        
+        # Store old settings snapshot for rollback
+        if "activity_log" not in data:
+            data["activity_log"] = []
+        
+        entry = {
+            "timestamp": datetime.now().isoformat(),
+            "to_name": to_name,
+            "action": "Updated settings",
+            "details": change_summary,
+            "settings_snapshot": old_settings.copy()  # Store previous settings for rollback
+        }
+        
+        data["activity_log"].insert(0, entry)
+        data["activity_log"] = data["activity_log"][:100]
         
         data["settings"] = settings
-        
-        change_summary = ", ".join(changes) if changes else "minor adjustments"
-        log_activity(data, "Updated settings", change_summary)
         
         if save_data(data):
             st.success("✅ Settings saved!")
@@ -2263,7 +2308,7 @@ def show_aliases_page(data, registry):
 def show_activity_log_page(data):
     st.title("📜 Activity Log")
     
-    st.markdown("Track who made changes and when.")
+    st.markdown("Track who made changes and when. You can restore previous settings from here.")
     
     activity_log = data.get("activity_log", [])
     
@@ -2298,11 +2343,12 @@ def show_activity_log_page(data):
         st.info("No matching activities found.")
         return
     
-    for entry in filtered_log[:50]:  # Show last 50
+    for i, entry in enumerate(filtered_log[:50]):  # Show last 50
         timestamp = format_activity_time(entry.get("timestamp", ""))
         to_name = entry.get("to_name", "Anonymous")
         action = entry.get("action", "Unknown action")
         details = entry.get("details", "")
+        has_snapshot = "settings_snapshot" in entry
         
         # Color code by action type
         if "Added" in action:
@@ -2315,17 +2361,41 @@ def show_activity_log_page(data):
             icon = "🆕"
         elif "Archived" in action:
             icon = "📦"
+        elif "Restored" in action:
+            icon = "↩️"
         else:
             icon = "📝"
         
-        col1, col2 = st.columns([1, 4])
+        # Layout with optional restore button
+        if has_snapshot:
+            col1, col2, col3 = st.columns([1, 3, 1])
+        else:
+            col1, col2 = st.columns([1, 4])
+        
         with col1:
             st.caption(timestamp)
         with col2:
+            st.write(f"{icon} **{to_name}** {action.lower()}")
             if details:
-                st.write(f"{icon} **{to_name}** {action.lower()}: {details}")
-            else:
-                st.write(f"{icon} **{to_name}** {action.lower()}")
+                st.caption(details)
+        
+        if has_snapshot:
+            with col3:
+                # Find original index in activity_log for the key
+                original_idx = activity_log.index(entry)
+                if st.button("↩️ Restore", key=f"restore_{original_idx}", help="Restore settings to before this change"):
+                    snapshot = entry.get("settings_snapshot", {})
+                    if snapshot:
+                        # Log the restoration
+                        restore_to = get_to_name() or "Anonymous"
+                        log_activity(data, "Restored settings", f"Reverted to settings from {timestamp} (by {to_name})")
+                        
+                        data["settings"] = snapshot.copy()
+                        if save_data(data):
+                            st.success(f"✅ Settings restored to {timestamp} version!")
+                            st.rerun()
+        
+        st.markdown("---")
     
     if len(filtered_log) > 50:
         st.caption(f"Showing 50 of {len(filtered_log)} entries")
