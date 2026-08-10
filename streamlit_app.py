@@ -213,7 +213,16 @@ def get_default_settings():
         "best_n": 6,
         "drop_worst": False,
         "min_tournaments": 1,
-        "characters_enabled": True  # Toggle for character features
+        "characters_enabled": True,
+        "ranking_system": "points",  # points, elo, weighted, hybrid
+        "elo_k_factor": 32,  # How volatile ELO changes are
+        "elo_start": 1500,  # Starting ELO
+        "hybrid_weights": {
+            "elo": 40,
+            "points": 30,
+            "winrate": 20,
+            "peak": 10
+        }
     }
 
 # =============================================================================
@@ -1071,15 +1080,146 @@ class StartGGExporter:
         return all_sets
 
 # =============================================================================
-# RANKING CALCULATIONS
+# RANKING SYSTEMS
 # =============================================================================
 
-def calculate_rankings(tournaments: list, settings: dict, registry: dict, character_names: dict = None, excluded_players: list = None) -> pd.DataFrame:
+def calculate_elo_ratings(tournaments: list, registry: dict, settings: dict) -> dict:
+    """
+    Calculate ELO ratings for all players based on set results.
+    Processes tournaments chronologically, then sets within each tournament.
+    
+    Returns: {player_name: {"elo": rating, "peak_elo": highest, "sets_played": count}}
+    """
+    k_factor = settings.get("elo_k_factor", 32)
+    start_elo = settings.get("elo_start", 1500)
+    
+    # Initialize all players
+    player_elo = {}
+    
+    def get_elo(player):
+        if player not in player_elo:
+            player_elo[player] = {
+                "elo": start_elo,
+                "peak_elo": start_elo,
+                "sets_played": 0,
+                "wins": 0,
+                "losses": 0
+            }
+        return player_elo[player]["elo"]
+    
+    def update_elo(winner, loser):
+        winner_elo = get_elo(winner)
+        loser_elo = get_elo(loser)
+        
+        # Expected scores
+        expected_winner = 1 / (1 + 10 ** ((loser_elo - winner_elo) / 400))
+        expected_loser = 1 / (1 + 10 ** ((winner_elo - loser_elo) / 400))
+        
+        # Update ratings
+        new_winner_elo = winner_elo + k_factor * (1 - expected_winner)
+        new_loser_elo = loser_elo + k_factor * (0 - expected_loser)
+        
+        player_elo[winner]["elo"] = new_winner_elo
+        player_elo[winner]["sets_played"] += 1
+        player_elo[winner]["wins"] += 1
+        if new_winner_elo > player_elo[winner]["peak_elo"]:
+            player_elo[winner]["peak_elo"] = new_winner_elo
+        
+        player_elo[loser]["elo"] = new_loser_elo
+        player_elo[loser]["sets_played"] += 1
+        player_elo[loser]["losses"] += 1
+    
+    # Sort tournaments by date
+    sorted_tournaments = sorted(
+        tournaments,
+        key=lambda t: t["tournament"].get("startAt", 0)
+    )
+    
+    # Process each tournament
+    for tourney in sorted_tournaments:
+        for event in tourney.get("events", []):
+            if event.get("name", "").lower() != "singles":
+                continue
+            
+            # Process sets
+            for set_data in event.get("sets", []):
+                slots = set_data.get("slots") or []
+                if len(slots) != 2:
+                    continue
+                
+                winner_id = set_data.get("winnerId")
+                if not winner_id:
+                    continue
+                
+                # Get player names
+                players = []
+                winner_name = None
+                loser_name = None
+                
+                for slot in slots:
+                    if not slot:
+                        continue
+                    entrant = slot.get("entrant") or {}
+                    if not entrant:
+                        continue
+                    
+                    raw_name = entrant.get("name", "")
+                    canonical = get_canonical_name(raw_name, registry)
+                    entrant_id = entrant.get("id")
+                    
+                    if entrant_id == winner_id:
+                        winner_name = canonical
+                    else:
+                        loser_name = canonical
+                
+                if winner_name and loser_name:
+                    update_elo(winner_name, loser_name)
+    
+    return player_elo
+
+def calculate_tournament_strength(tournaments: list, registry: dict, player_elo: dict) -> dict:
+    """
+    Calculate strength of each tournament based on average ELO of participants.
+    
+    Returns: {tournament_id: strength_multiplier}
+    """
+    tournament_strength = {}
+    all_avg_elos = []
+    
+    for tourney in tournaments:
+        tourney_id = tourney["tournament"]["id"]
+        
+        for event in tourney.get("events", []):
+            if event.get("name", "").lower() != "singles":
+                continue
+            
+            # Get all participants' ELO
+            participant_elos = []
+            for standing in event.get("standings", []):
+                entrant = standing.get("entrant") or {}
+                raw_name = entrant.get("name", "")
+                canonical = get_canonical_name(raw_name, registry)
+                
+                if canonical in player_elo:
+                    participant_elos.append(player_elo[canonical]["elo"])
+            
+            if participant_elos:
+                avg_elo = sum(participant_elos) / len(participant_elos)
+                tournament_strength[tourney_id] = avg_elo
+                all_avg_elos.append(avg_elo)
+    
+    # Normalize to multipliers (average tournament = 1.0)
+    if all_avg_elos:
+        baseline = sum(all_avg_elos) / len(all_avg_elos)
+        for t_id in tournament_strength:
+            tournament_strength[t_id] = tournament_strength[t_id] / baseline
+    
+    return tournament_strength
+
+def calculate_rankings_points(tournaments: list, settings: dict, registry: dict, excluded_players: list = None) -> pd.DataFrame:
+    """Original points-based ranking system."""
     if not tournaments:
         return pd.DataFrame()
-    
-    if character_names is None:
-        character_names = {}
     
     if excluded_players is None:
         excluded_players = []
@@ -1108,19 +1248,14 @@ def calculate_rankings(tournaments: list, settings: dict, registry: dict, charac
                 player_name = get_canonical_name(raw_name, registry)
                 
                 if player_name not in player_data:
-                    profile = registry.get("profiles", {}).get(player_name, {})
                     player_data[player_name] = {
                         "name": player_name,
-                        "user_id": profile.get("user_id"),
-                        "all_tags": profile.get("all_tags", [player_name]),
                         "total_points": 0,
                         "results": [],
                         "wins": 0,
                         "losses": 0,
                         "tournaments_played": 0,
                         "first_places": 0,
-                        "second_places": 0,
-                        "third_places": 0,
                         "best_placement": 999
                     }
                 
@@ -1141,18 +1276,13 @@ def calculate_rankings(tournaments: list, settings: dict, registry: dict, charac
                     "date": tourney_date,
                     "placement": placement,
                     "points": base_points,
-                    "entrants": num_entrants,
-                    "tag_used": raw_name
+                    "entrants": num_entrants
                 })
                 
                 player_data[player_name]["tournaments_played"] += 1
                 
                 if placement == 1:
                     player_data[player_name]["first_places"] += 1
-                elif placement == 2:
-                    player_data[player_name]["second_places"] += 1
-                elif placement == 3:
-                    player_data[player_name]["third_places"] += 1
                 
                 if placement < player_data[player_name]["best_placement"]:
                     player_data[player_name]["best_placement"] = placement
@@ -1201,7 +1331,7 @@ def calculate_rankings(tournaments: list, settings: dict, registry: dict, charac
     min_tournaments = settings.get("min_tournaments", 1)
     player_data = {k: v for k, v in player_data.items() if v["tournaments_played"] >= min_tournaments}
     
-    # Exclude players marked as not ranked
+    # Exclude players
     if excluded_players:
         player_data = {k: v for k, v in player_data.items() if k not in excluded_players}
     
@@ -1214,8 +1344,6 @@ def calculate_rankings(tournaments: list, settings: dict, registry: dict, charac
             "L": data["losses"],
             "Win%": round(data["wins"] / (data["wins"] + data["losses"]) * 100, 1) if (data["wins"] + data["losses"]) > 0 else 0,
             "🥇": data["first_places"],
-            "🥈": data["second_places"],
-            "🥉": data["third_places"],
             "Best": data["best_placement"],
             "Events": data["tournaments_played"]
         }
@@ -1227,6 +1355,278 @@ def calculate_rankings(tournaments: list, settings: dict, registry: dict, charac
         df["Rank"] = range(1, len(df) + 1)
     
     return df
+
+def calculate_rankings_elo(tournaments: list, settings: dict, registry: dict, excluded_players: list = None) -> pd.DataFrame:
+    """ELO-based ranking system."""
+    if not tournaments:
+        return pd.DataFrame()
+    
+    if excluded_players is None:
+        excluded_players = []
+    
+    player_elo = calculate_elo_ratings(tournaments, registry, settings)
+    
+    # Filter and build dataframe
+    min_tournaments = settings.get("min_tournaments", 1)
+    
+    # Count tournaments per player
+    player_tournaments = {}
+    for tourney in tournaments:
+        for event in tourney.get("events", []):
+            if event.get("name", "").lower() != "singles":
+                continue
+            for standing in event.get("standings", []):
+                entrant = standing.get("entrant") or {}
+                raw_name = entrant.get("name", "")
+                canonical = get_canonical_name(raw_name, registry)
+                player_tournaments[canonical] = player_tournaments.get(canonical, 0) + 1
+    
+    df_data = []
+    for player_name, elo_data in player_elo.items():
+        if player_name in excluded_players:
+            continue
+        if player_tournaments.get(player_name, 0) < min_tournaments:
+            continue
+        
+        wins = elo_data["wins"]
+        losses = elo_data["losses"]
+        
+        df_data.append({
+            "Rank": 0,
+            "Player": player_name,
+            "ELO": round(elo_data["elo"]),
+            "Peak": round(elo_data["peak_elo"]),
+            "W": wins,
+            "L": losses,
+            "Win%": round(wins / (wins + losses) * 100, 1) if (wins + losses) > 0 else 0,
+            "Sets": elo_data["sets_played"],
+            "Events": player_tournaments.get(player_name, 0)
+        })
+    
+    df = pd.DataFrame(df_data)
+    
+    if len(df) > 0:
+        df = df.sort_values("ELO", ascending=False).reset_index(drop=True)
+        df["Rank"] = range(1, len(df) + 1)
+    
+    return df
+
+def calculate_rankings_weighted(tournaments: list, settings: dict, registry: dict, excluded_players: list = None) -> pd.DataFrame:
+    """Tournament strength weighted ranking system."""
+    if not tournaments:
+        return pd.DataFrame()
+    
+    if excluded_players is None:
+        excluded_players = []
+    
+    # First calculate ELO to determine tournament strength
+    player_elo = calculate_elo_ratings(tournaments, registry, settings)
+    tournament_strength = calculate_tournament_strength(tournaments, registry, player_elo)
+    
+    points_map = settings["points"]
+    player_data = {}
+    
+    for tourney in tournaments:
+        tourney_id = tourney["tournament"]["id"]
+        strength_mult = tournament_strength.get(tourney_id, 1.0)
+        
+        for event in tourney.get("events", []):
+            if event.get("name", "").lower() != "singles":
+                continue
+            
+            for standing in event.get("standings", []):
+                placement = standing.get("placement")
+                entrant = standing.get("entrant") or {}
+                
+                if not entrant:
+                    continue
+                
+                raw_name = entrant.get("name", "Unknown")
+                player_name = get_canonical_name(raw_name, registry)
+                
+                if player_name not in player_data:
+                    player_data[player_name] = {
+                        "name": player_name,
+                        "total_points": 0,
+                        "tournaments_played": 0,
+                        "wins": 0,
+                        "losses": 0,
+                        "first_places": 0,
+                        "best_placement": 999
+                    }
+                
+                # Base points
+                base_points = 0
+                for place_str, pts in sorted(points_map.items(), key=lambda x: int(x[0])):
+                    place = int(place_str)
+                    if placement <= place:
+                        base_points = pts
+                        break
+                
+                # Apply tournament strength multiplier
+                weighted_points = base_points * strength_mult
+                
+                player_data[player_name]["total_points"] += weighted_points
+                player_data[player_name]["tournaments_played"] += 1
+                
+                if placement == 1:
+                    player_data[player_name]["first_places"] += 1
+                if placement < player_data[player_name]["best_placement"]:
+                    player_data[player_name]["best_placement"] = placement
+    
+    # Get wins/losses from ELO data
+    for player_name in player_data:
+        if player_name in player_elo:
+            player_data[player_name]["wins"] = player_elo[player_name]["wins"]
+            player_data[player_name]["losses"] = player_elo[player_name]["losses"]
+    
+    min_tournaments = settings.get("min_tournaments", 1)
+    player_data = {k: v for k, v in player_data.items() if v["tournaments_played"] >= min_tournaments}
+    
+    if excluded_players:
+        player_data = {k: v for k, v in player_data.items() if k not in excluded_players}
+    
+    df = pd.DataFrame([
+        {
+            "Rank": 0,
+            "Player": data["name"],
+            "Points": round(data["total_points"], 1),
+            "W": data["wins"],
+            "L": data["losses"],
+            "Win%": round(data["wins"] / (data["wins"] + data["losses"]) * 100, 1) if (data["wins"] + data["losses"]) > 0 else 0,
+            "🥇": data["first_places"],
+            "Best": data["best_placement"],
+            "Events": data["tournaments_played"]
+        }
+        for data in player_data.values()
+    ])
+    
+    if len(df) > 0:
+        df = df.sort_values("Points", ascending=False).reset_index(drop=True)
+        df["Rank"] = range(1, len(df) + 1)
+    
+    return df
+
+def calculate_rankings_hybrid(tournaments: list, settings: dict, registry: dict, excluded_players: list = None) -> pd.DataFrame:
+    """Hybrid ranking combining multiple factors."""
+    if not tournaments:
+        return pd.DataFrame()
+    
+    if excluded_players is None:
+        excluded_players = []
+    
+    weights = settings.get("hybrid_weights", {
+        "elo": 40, "points": 30, "winrate": 20, "peak": 10
+    })
+    
+    # Get ELO rankings
+    player_elo = calculate_elo_ratings(tournaments, registry, settings)
+    
+    # Get points data
+    points_df = calculate_rankings_points(tournaments, settings, registry, [])
+    points_lookup = {row["Player"]: row["Points"] for _, row in points_df.iterrows()} if not points_df.empty else {}
+    
+    # Count tournaments
+    player_tournaments = {}
+    player_best = {}
+    for tourney in tournaments:
+        for event in tourney.get("events", []):
+            if event.get("name", "").lower() != "singles":
+                continue
+            for standing in event.get("standings", []):
+                entrant = standing.get("entrant") or {}
+                raw_name = entrant.get("name", "")
+                canonical = get_canonical_name(raw_name, registry)
+                player_tournaments[canonical] = player_tournaments.get(canonical, 0) + 1
+                placement = standing.get("placement", 999)
+                if canonical not in player_best or placement < player_best[canonical]:
+                    player_best[canonical] = placement
+    
+    # Normalize each component to 0-100 scale
+    all_elos = [d["elo"] for d in player_elo.values()]
+    all_points = list(points_lookup.values()) if points_lookup else [0]
+    
+    max_elo = max(all_elos) if all_elos else 1
+    min_elo = min(all_elos) if all_elos else 0
+    max_points = max(all_points) if all_points else 1
+    
+    def normalize_elo(elo):
+        if max_elo == min_elo:
+            return 50
+        return ((elo - min_elo) / (max_elo - min_elo)) * 100
+    
+    def normalize_points(pts):
+        if max_points == 0:
+            return 0
+        return (pts / max_points) * 100
+    
+    def normalize_winrate(wins, losses):
+        if wins + losses == 0:
+            return 50
+        return (wins / (wins + losses)) * 100
+    
+    def normalize_peak(placement):
+        # 1st = 100, 2nd = 90, 3rd = 80, etc.
+        return max(0, 100 - (placement - 1) * 10)
+    
+    min_tournaments = settings.get("min_tournaments", 1)
+    
+    df_data = []
+    for player_name, elo_data in player_elo.items():
+        if player_name in excluded_players:
+            continue
+        if player_tournaments.get(player_name, 0) < min_tournaments:
+            continue
+        
+        wins = elo_data["wins"]
+        losses = elo_data["losses"]
+        
+        # Calculate component scores
+        elo_score = normalize_elo(elo_data["elo"])
+        points_score = normalize_points(points_lookup.get(player_name, 0))
+        winrate_score = normalize_winrate(wins, losses)
+        peak_score = normalize_peak(player_best.get(player_name, 999))
+        
+        # Weighted hybrid score
+        hybrid_score = (
+            (elo_score * weights["elo"] / 100) +
+            (points_score * weights["points"] / 100) +
+            (winrate_score * weights["winrate"] / 100) +
+            (peak_score * weights["peak"] / 100)
+        )
+        
+        df_data.append({
+            "Rank": 0,
+            "Player": player_name,
+            "Score": round(hybrid_score, 1),
+            "ELO": round(elo_data["elo"]),
+            "W": wins,
+            "L": losses,
+            "Win%": round(wins / (wins + losses) * 100, 1) if (wins + losses) > 0 else 0,
+            "Best": player_best.get(player_name, 999),
+            "Events": player_tournaments.get(player_name, 0)
+        })
+    
+    df = pd.DataFrame(df_data)
+    
+    if len(df) > 0:
+        df = df.sort_values("Score", ascending=False).reset_index(drop=True)
+        df["Rank"] = range(1, len(df) + 1)
+    
+    return df
+
+def calculate_rankings(tournaments: list, settings: dict, registry: dict, character_names: dict = None, excluded_players: list = None) -> pd.DataFrame:
+    """Main ranking function that dispatches to the selected system."""
+    system = settings.get("ranking_system", "points")
+    
+    if system == "elo":
+        return calculate_rankings_elo(tournaments, settings, registry, excluded_players)
+    elif system == "weighted":
+        return calculate_rankings_weighted(tournaments, settings, registry, excluded_players)
+    elif system == "hybrid":
+        return calculate_rankings_hybrid(tournaments, settings, registry, excluded_players)
+    else:  # points (default)
+        return calculate_rankings_points(tournaments, settings, registry, excluded_players)
 
 def get_player_details(tournaments: list, player_name: str, registry: dict, character_names: dict) -> dict:
     details = {
@@ -1602,13 +2002,53 @@ def show_rankings_page(data, registry, tournaments):
     settings = data.get("settings", get_default_settings())
     character_names = data.get("character_names", {})
     excluded_players = data.get("excluded_players", [])
+    
+    # Ranking system selector
+    system_options = {
+        "points": "📊 Points (Attendance)",
+        "elo": "♟️ ELO (Skill-Based)",
+        "weighted": "⚖️ Tournament Weighted",
+        "hybrid": "🔀 Hybrid (Combined)"
+    }
+    
+    col1, col2 = st.columns([2, 3])
+    
+    with col1:
+        current_system = settings.get("ranking_system", "points")
+        selected_system = st.selectbox(
+            "Ranking System",
+            options=list(system_options.keys()),
+            format_func=lambda x: system_options[x],
+            index=list(system_options.keys()).index(current_system),
+            help="Choose how players are ranked"
+        )
+        
+        # Update system if changed
+        if selected_system != current_system:
+            settings["ranking_system"] = selected_system
+            data["settings"] = settings
+            save_data(data)
+            st.rerun()
+    
+    with col2:
+        # System description
+        system_descriptions = {
+            "points": "Ranks by total placement points. Rewards attendance.",
+            "elo": "Chess-style rating. Each set updates ratings based on opponent strength.",
+            "weighted": "Points scaled by tournament strength (avg. opponent ELO).",
+            "hybrid": f"Combined: {settings.get('hybrid_weights', {}).get('elo', 40)}% ELO + {settings.get('hybrid_weights', {}).get('points', 30)}% Points + {settings.get('hybrid_weights', {}).get('winrate', 20)}% Win% + {settings.get('hybrid_weights', {}).get('peak', 10)}% Peak"
+        }
+        st.caption(system_descriptions.get(selected_system, ""))
+    
+    st.markdown("---")
+    
     df = calculate_rankings(tournaments, settings, registry, character_names, excluded_players)
     
     if df.empty:
         st.warning("No ranking data available.")
         return
     
-    # Better layout: Leader first, then stats
+    # Stats row - Leader first with more space
     leader_name = df.iloc[0]["Player"] if len(df) > 0 else "N/A"
     
     col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
@@ -1624,11 +2064,33 @@ def show_rankings_page(data, registry, tournaments):
     
     st.markdown("---")
     
-    st.dataframe(
-        df,
-        use_container_width=True,
-        hide_index=True,
-        column_config={
+    # Configure columns based on system
+    if selected_system == "elo":
+        column_config = {
+            "Rank": st.column_config.NumberColumn("Rank", width="small"),
+            "Player": st.column_config.TextColumn("Player", width="medium"),
+            "ELO": st.column_config.NumberColumn("ELO", width="small"),
+            "Peak": st.column_config.NumberColumn("Peak", width="small"),
+            "W": st.column_config.NumberColumn("W", width="small"),
+            "L": st.column_config.NumberColumn("L", width="small"),
+            "Win%": st.column_config.NumberColumn("Win%", format="%.1f%%", width="small"),
+            "Sets": st.column_config.NumberColumn("Sets", width="small"),
+            "Events": st.column_config.NumberColumn("Events", width="small"),
+        }
+    elif selected_system == "hybrid":
+        column_config = {
+            "Rank": st.column_config.NumberColumn("Rank", width="small"),
+            "Player": st.column_config.TextColumn("Player", width="medium"),
+            "Score": st.column_config.NumberColumn("Score", width="small"),
+            "ELO": st.column_config.NumberColumn("ELO", width="small"),
+            "W": st.column_config.NumberColumn("W", width="small"),
+            "L": st.column_config.NumberColumn("L", width="small"),
+            "Win%": st.column_config.NumberColumn("Win%", format="%.1f%%", width="small"),
+            "Best": st.column_config.NumberColumn("Best", width="small"),
+            "Events": st.column_config.NumberColumn("Events", width="small"),
+        }
+    else:  # points, weighted
+        column_config = {
             "Rank": st.column_config.NumberColumn("Rank", width="small"),
             "Player": st.column_config.TextColumn("Player", width="medium"),
             "Points": st.column_config.NumberColumn("Points", width="small"),
@@ -1636,11 +2098,15 @@ def show_rankings_page(data, registry, tournaments):
             "L": st.column_config.NumberColumn("L", width="small"),
             "Win%": st.column_config.NumberColumn("Win%", format="%.1f%%", width="small"),
             "🥇": st.column_config.NumberColumn("🥇", width="small"),
-            "🥈": st.column_config.NumberColumn("🥈", width="small"),
-            "🥉": st.column_config.NumberColumn("🥉", width="small"),
             "Best": st.column_config.NumberColumn("Best", width="small"),
             "Events": st.column_config.NumberColumn("Events", width="small"),
         }
+    
+    st.dataframe(
+        df,
+        use_container_width=True,
+        hide_index=True,
+        column_config=column_config
     )
     
     st.markdown("---")
@@ -1654,13 +2120,13 @@ def show_rankings_page(data, registry, tournaments):
         st.download_button(
             "📥 Export Excel",
             excel_buffer.getvalue(),
-            file_name="season_rankings.xlsx",
+            file_name=f"season_rankings_{selected_system}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
     
     with col2:
         csv = df.to_csv(index=False)
-        st.download_button("📥 Export CSV", csv, file_name="season_rankings.csv", mime="text/csv")
+        st.download_button("📥 Export CSV", csv, file_name=f"season_rankings_{selected_system}.csv", mime="text/csv")
 
 def show_add_tournament_page(data):
     st.title("➕ Add Tournament")
@@ -2403,6 +2869,52 @@ def show_settings_page(data):
         value=settings.get("characters_enabled", True),
         help="Show character usage stats on player profiles. Disable if character data is not working correctly."
     )
+    
+    st.markdown("---")
+    st.subheader("♟️ ELO Settings")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        settings["elo_k_factor"] = st.slider(
+            "K-Factor (volatility)",
+            min_value=8,
+            max_value=64,
+            value=settings.get("elo_k_factor", 32),
+            help="Higher = ratings change more per set. 32 is standard, 16 for more stable ratings."
+        )
+    with col2:
+        settings["elo_start"] = st.number_input(
+            "Starting ELO",
+            min_value=1000,
+            max_value=2000,
+            value=settings.get("elo_start", 1500),
+            step=100,
+            help="Initial rating for new players"
+        )
+    
+    st.markdown("---")
+    st.subheader("🔀 Hybrid Weights")
+    st.caption("Adjust how much each factor contributes to hybrid rankings (must total 100%)")
+    
+    hybrid_weights = settings.get("hybrid_weights", {"elo": 40, "points": 30, "winrate": 20, "peak": 10})
+    
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        hybrid_weights["elo"] = st.number_input("ELO %", min_value=0, max_value=100, value=hybrid_weights.get("elo", 40), step=5)
+    with col2:
+        hybrid_weights["points"] = st.number_input("Points %", min_value=0, max_value=100, value=hybrid_weights.get("points", 30), step=5)
+    with col3:
+        hybrid_weights["winrate"] = st.number_input("Win% %", min_value=0, max_value=100, value=hybrid_weights.get("winrate", 20), step=5)
+    with col4:
+        hybrid_weights["peak"] = st.number_input("Peak %", min_value=0, max_value=100, value=hybrid_weights.get("peak", 10), step=5)
+    
+    total_weight = sum(hybrid_weights.values())
+    if total_weight != 100:
+        st.warning(f"⚠️ Weights total {total_weight}%, should be 100%")
+    else:
+        st.success("✅ Weights total 100%")
+    
+    settings["hybrid_weights"] = hybrid_weights
     
     st.markdown("---")
     
