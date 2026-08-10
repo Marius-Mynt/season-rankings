@@ -48415,5 +48415,6 @@
     "min_tournaments": 1,
     "characters_enabled": true
   },
-  "player_aliases": {}
+  "player_aliases": {},
+  "character_names": {}
 }
