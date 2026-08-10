@@ -1,7 +1,7 @@
 """
 🎮 Smash Tournament Season Rankings
 A Streamlit app for tracking and analyzing tournament results
-Version 2.0 - With player ID tracking and profiles
+Version 3.0 - With GitHub persistent storage
 """
 
 import streamlit as st
@@ -9,8 +9,8 @@ import requests
 import json
 import pandas as pd
 from datetime import datetime
-from pathlib import Path
 import io
+import base64
 
 # Page config
 st.set_page_config(
@@ -21,27 +21,102 @@ st.set_page_config(
 )
 
 # =============================================================================
-# DATA STORAGE
+# GITHUB STORAGE
 # =============================================================================
 
-DATA_FILE = Path("data/tournaments.json")
+DATA_FILE_PATH = "data/tournaments.json"
 
-def load_data():
-    """Load tournament data from file"""
-    if DATA_FILE.exists():
-        with open(DATA_FILE, 'r') as f:
-            return json.load(f)
+def get_github_config():
+    """Get GitHub configuration from secrets"""
+    return {
+        "token": st.secrets.get("GITHUB_TOKEN", ""),
+        "repo": st.secrets.get("GITHUB_REPO", ""),
+    }
+
+def load_data_from_github():
+    """Load tournament data from GitHub repository"""
+    config = get_github_config()
+    
+    if not config["token"] or not config["repo"]:
+        st.warning("⚠️ GitHub storage not configured. Data will not persist!")
+        return get_empty_data()
+    
+    url = f"https://api.github.com/repos/{config['repo']}/contents/{DATA_FILE_PATH}"
+    headers = {
+        "Authorization": f"token {config['token']}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    
+    try:
+        response = requests.get(url, headers=headers)
+        
+        if response.status_code == 200:
+            content = response.json()
+            # Decode base64 content
+            file_content = base64.b64decode(content["content"]).decode("utf-8")
+            data = json.loads(file_content)
+            # Store SHA for later updates
+            st.session_state["github_sha"] = content["sha"]
+            return data
+        elif response.status_code == 404:
+            # File doesn't exist yet
+            return get_empty_data()
+        else:
+            st.error(f"GitHub API error: {response.status_code}")
+            return get_empty_data()
+    except Exception as e:
+        st.error(f"Error loading from GitHub: {str(e)}")
+        return get_empty_data()
+
+def save_data_to_github(data):
+    """Save tournament data to GitHub repository"""
+    config = get_github_config()
+    
+    if not config["token"] or not config["repo"]:
+        st.warning("⚠️ GitHub storage not configured. Data will not persist!")
+        return False
+    
+    url = f"https://api.github.com/repos/{config['repo']}/contents/{DATA_FILE_PATH}"
+    headers = {
+        "Authorization": f"token {config['token']}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    
+    # Encode content as base64
+    content = json.dumps(data, indent=2, ensure_ascii=False)
+    content_base64 = base64.b64encode(content.encode("utf-8")).decode("utf-8")
+    
+    # Prepare request body
+    body = {
+        "message": f"Update rankings data - {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+        "content": content_base64,
+    }
+    
+    # Include SHA if updating existing file
+    if "github_sha" in st.session_state:
+        body["sha"] = st.session_state["github_sha"]
+    
+    try:
+        response = requests.put(url, headers=headers, json=body)
+        
+        if response.status_code in [200, 201]:
+            # Update SHA for next save
+            st.session_state["github_sha"] = response.json()["content"]["sha"]
+            return True
+        else:
+            st.error(f"GitHub save error: {response.status_code} - {response.text}")
+            return False
+    except Exception as e:
+        st.error(f"Error saving to GitHub: {str(e)}")
+        return False
+
+def get_empty_data():
+    """Return empty data structure"""
     return {
         "tournaments": [],
         "settings": get_default_settings(),
-        "player_aliases": {}  # Manual alias overrides: {"display_name": ["alt_name1", "alt_name2"]}
+        "player_aliases": {}
     }
-
-def save_data(data):
-    """Save tournament data to file"""
-    DATA_FILE.parent.mkdir(exist_ok=True)
-    with open(DATA_FILE, 'w') as f:
-        json.dump(data, f, indent=2)
 
 def get_default_settings():
     """Default ranking settings"""
@@ -58,6 +133,28 @@ def get_default_settings():
         "min_tournaments": 1
     }
 
+# Cache data loading to avoid repeated API calls
+@st.cache_data(ttl=60)  # Cache for 60 seconds
+def load_data_cached():
+    """Cached data loading"""
+    return load_data_from_github()
+
+def load_data():
+    """Load data, using session state if available"""
+    if "app_data" not in st.session_state:
+        st.session_state["app_data"] = load_data_from_github()
+    return st.session_state["app_data"]
+
+def save_data(data):
+    """Save data and update session state"""
+    st.session_state["app_data"] = data
+    return save_data_to_github(data)
+
+def refresh_data():
+    """Force refresh data from GitHub"""
+    st.session_state["app_data"] = load_data_from_github()
+    return st.session_state["app_data"]
+
 # =============================================================================
 # PLAYER IDENTITY TRACKING
 # =============================================================================
@@ -65,12 +162,6 @@ def get_default_settings():
 def build_player_registry(tournaments: list, manual_aliases: dict) -> dict:
     """
     Build a registry mapping user_ids and names to canonical player identities.
-    
-    Returns: {
-        "by_user_id": {user_id: canonical_name},
-        "by_name": {any_name: canonical_name},
-        "profiles": {canonical_name: {user_id, all_tags, ...}}
-    }
     """
     registry = {
         "by_user_id": {},
@@ -79,8 +170,8 @@ def build_player_registry(tournaments: list, manual_aliases: dict) -> dict:
     }
     
     # First pass: collect all user_ids and their associated names
-    user_id_to_names = {}  # {user_id: set of names}
-    name_to_user_ids = {}  # {name: set of user_ids}
+    user_id_to_names = {}
+    name_to_user_ids = {}
     
     for tourney in tournaments:
         for event in tourney.get("events", []):
@@ -106,7 +197,7 @@ def build_player_registry(tournaments: list, manual_aliases: dict) -> dict:
                                 name_to_user_ids[entrant_name] = set()
                             name_to_user_ids[entrant_name].add(user_id)
             
-            # From entrants (if available)
+            # From entrants
             for entrant in event.get("entrants", []):
                 entrant_name = entrant.get("name", "")
                 
@@ -127,9 +218,8 @@ def build_player_registry(tournaments: list, manual_aliases: dict) -> dict:
                                 name_to_user_ids[entrant_name] = set()
                             name_to_user_ids[entrant_name].add(user_id)
     
-    # Build canonical names (use most recent or most common tag)
+    # Build canonical names
     for user_id, names in user_id_to_names.items():
-        # Pick the longest name as canonical (usually includes prefix)
         canonical = max(names, key=len) if names else f"Player_{user_id}"
         
         registry["by_user_id"][user_id] = canonical
@@ -144,12 +234,11 @@ def build_player_registry(tournaments: list, manual_aliases: dict) -> dict:
                 "canonical_name": canonical
             }
     
-    # Apply manual aliases (overrides)
+    # Apply manual aliases
     for display_name, aliases in manual_aliases.items():
         for alias in aliases:
             registry["by_name"][alias] = display_name
         
-        # Also add the display_name itself
         registry["by_name"][display_name] = display_name
         
         if display_name not in registry["profiles"]:
@@ -163,7 +252,7 @@ def build_player_registry(tournaments: list, manual_aliases: dict) -> dict:
                 set(registry["profiles"][display_name]["all_tags"] + aliases)
             )
     
-    # Add any names not yet in registry (no user_id found)
+    # Add any names not yet in registry
     for tourney in tournaments:
         for event in tourney.get("events", []):
             for standing in event.get("standings", []):
@@ -220,7 +309,6 @@ class StartGGExporter:
         if progress_callback:
             progress_callback("Fetching tournament info...")
         
-        # Get tournament and events
         query = """
         query TournamentEvents($slug: String!) {
           tournament(slug: $slug) {
@@ -256,7 +344,6 @@ class StartGGExporter:
                 break
         
         if not singles_event:
-            # If no "Singles" event, take the first one
             if events:
                 singles_event = events[0]
             else:
@@ -267,13 +354,8 @@ class StartGGExporter:
         if progress_callback:
             progress_callback(f"Processing event: {singles_event['name']}...")
         
-        # Get entrants (with user IDs!)
         entrants = self._get_entrants(event_id, progress_callback)
-        
-        # Get standings
         standings = self._get_standings(event_id, progress_callback)
-        
-        # Get phases and sets
         phases = self._get_phases(event_id)
         all_sets = []
         
@@ -281,7 +363,6 @@ class StartGGExporter:
             phase_sets = self._get_phase_sets(phase["id"], phase["name"], progress_callback)
             all_sets.extend(phase_sets)
         
-        # Build export data
         export_data = {
             "tournament": {
                 "id": tournament["id"],
@@ -437,7 +518,6 @@ class StartGGExporter:
         if progress_callback:
             progress_callback(f"Fetching matches from {phase_name}...")
         
-        # First get phase groups
         pg_query = """
         query PhaseGroups($phaseId: ID!) {
           phase(id: $phaseId) {
@@ -543,7 +623,6 @@ def calculate_rankings(tournaments: list, settings: dict, registry: dict) -> pd.
         tourney_date = tourney["tournament"].get("startAt", 0)
         
         for event in tourney.get("events", []):
-            # Only process Singles
             if event.get("name", "").lower() != "singles":
                 continue
             
@@ -556,11 +635,9 @@ def calculate_rankings(tournaments: list, settings: dict, registry: dict) -> pd.
                 if not entrant:
                     continue
                 
-                # Get canonical player name using registry
                 raw_name = entrant.get("name", "Unknown")
                 player_name = get_canonical_name(raw_name, registry)
                 
-                # Initialize player data
                 if player_name not in player_data:
                     profile = registry.get("profiles", {}).get(player_name, {})
                     player_data[player_name] = {
@@ -578,7 +655,6 @@ def calculate_rankings(tournaments: list, settings: dict, registry: dict) -> pd.
                         "best_placement": 999
                     }
                 
-                # Calculate points for this placement
                 base_points = 0
                 for place_str, pts in sorted(points_map.items(), key=lambda x: int(x[0])):
                     place = int(place_str)
@@ -586,13 +662,11 @@ def calculate_rankings(tournaments: list, settings: dict, registry: dict) -> pd.
                         base_points = pts
                         break
                 
-                # Apply attendance scaling if enabled
                 if settings.get("attendance_scaling") and num_entrants > 0:
                     scaling_base = settings.get("scaling_base", 32)
                     scale_factor = num_entrants / scaling_base
                     base_points = int(base_points * scale_factor)
                 
-                # Store result
                 player_data[player_name]["results"].append({
                     "tournament": tourney_name,
                     "date": tourney_date,
@@ -646,22 +720,18 @@ def calculate_rankings(tournaments: list, settings: dict, registry: dict) -> pd.
     for player_name, data in player_data.items():
         results = sorted(data["results"], key=lambda x: x["points"], reverse=True)
         
-        # Apply "best N" if enabled
         if settings.get("best_n_enabled"):
             best_n = settings.get("best_n", 6)
             results = results[:best_n]
         
-        # Apply "drop worst" if enabled
         if settings.get("drop_worst") and len(results) > 1:
             results = results[:-1]
         
         data["total_points"] = sum(r["points"] for r in results)
     
-    # Filter by minimum tournaments
     min_tournaments = settings.get("min_tournaments", 1)
     player_data = {k: v for k, v in player_data.items() if v["tournaments_played"] >= min_tournaments}
     
-    # Convert to DataFrame
     df = pd.DataFrame([
         {
             "Rank": 0,
@@ -697,7 +767,6 @@ def get_player_details(tournaments: list, player_name: str, registry: dict) -> d
         "best_placement": 999,
         "worst_placement": 0,
         "avg_placement": 0,
-        "notable_wins": [],  # Wins against top players
         "recent_sets": []
     }
     
@@ -711,7 +780,6 @@ def get_player_details(tournaments: list, player_name: str, registry: dict) -> d
             if event.get("name", "").lower() != "singles":
                 continue
             
-            # Find this player's standing
             for standing in event.get("standings", []):
                 entrant = standing.get("entrant") or {}
                 raw_name = entrant.get("name", "")
@@ -737,7 +805,6 @@ def get_player_details(tournaments: list, player_name: str, registry: dict) -> d
                     details["tournaments_played"] += 1
                     break
             
-            # Find sets involving this player
             for set_data in event.get("sets", []):
                 slots = set_data.get("slots") or []
                 if len(slots) != 2:
@@ -788,9 +855,8 @@ def get_player_details(tournaments: list, player_name: str, registry: dict) -> d
     if placements:
         details["avg_placement"] = round(sum(placements) / len(placements), 1)
     
-    # Sort results by date
     details["results"] = sorted(details["results"], key=lambda x: x.get("date", 0), reverse=True)
-    details["recent_sets"] = details["recent_sets"][:20]  # Last 20 sets
+    details["recent_sets"] = details["recent_sets"][:20]
     
     return details
 
@@ -817,7 +883,6 @@ def get_head_to_head(tournaments: list, player1: str, player2: str, registry: di
                 if len(slots) != 2:
                     continue
                 
-                # Safely get names with null handling
                 slot_names = []
                 for slot in slots:
                     if slot and slot.get("entrant"):
@@ -874,7 +939,6 @@ def main():
         st.title("🎮 Season Rankings")
         st.markdown("---")
         
-        # Navigation
         page = st.radio(
             "Navigation",
             ["🏆 Rankings", "➕ Add Tournament", "👤 Players", "🥊 Head-to-Head", "📋 Tournaments", "⚙️ Settings", "🔗 Manage Aliases"],
@@ -884,6 +948,12 @@ def main():
         st.markdown("---")
         st.caption(f"📊 {len(data['tournaments'])} tournaments")
         st.caption(f"👥 {len(registry['profiles'])} players")
+        
+        # Refresh button
+        st.markdown("---")
+        if st.button("🔄 Refresh Data"):
+            refresh_data()
+            st.rerun()
     
     # Main content
     if page == "🏆 Rankings":
@@ -909,7 +979,6 @@ def show_rankings_page(data, registry):
         st.info("No tournaments added yet. Go to '➕ Add Tournament' to get started!")
         return
     
-    # Calculate rankings
     settings = data.get("settings", get_default_settings())
     df = calculate_rankings(data["tournaments"], settings, registry)
     
@@ -917,7 +986,6 @@ def show_rankings_page(data, registry):
         st.warning("No ranking data available.")
         return
     
-    # Summary metrics
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric("Tournaments", len(data["tournaments"]))
@@ -936,7 +1004,6 @@ def show_rankings_page(data, registry):
     
     st.markdown("---")
     
-    # Rankings table
     st.dataframe(
         df,
         use_container_width=True,
@@ -956,17 +1023,14 @@ def show_rankings_page(data, registry):
         }
     )
     
-    # Export buttons
     st.markdown("---")
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        # Excel export
         excel_buffer = io.BytesIO()
         with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
             df.to_excel(writer, sheet_name='Rankings', index=False)
             
-            # Tournament summary sheet
             tourney_df = pd.DataFrame([
                 {
                     "Tournament": t["tournament"]["name"],
@@ -989,7 +1053,6 @@ def show_rankings_page(data, registry):
         )
     
     with col2:
-        # CSV export
         csv = df.to_csv(index=False)
         st.download_button(
             "📥 Export CSV",
@@ -1002,7 +1065,6 @@ def show_add_tournament_page(data):
     """Page for adding new tournaments"""
     st.title("➕ Add Tournament")
     
-    # Check for API key
     api_key = st.secrets.get("STARTGG_API_KEY", "")
     
     if not api_key:
@@ -1036,29 +1098,28 @@ def show_add_tournament_page(data):
                 exporter = StartGGExporter(api_key)
                 tournament_data = exporter.export_tournament(url, update_progress)
                 
-                # Check if already exists
                 existing_ids = [t["tournament"]["id"] for t in data["tournaments"]]
                 if tournament_data["tournament"]["id"] in existing_ids:
                     st.warning(f"Tournament '{tournament_data['tournament']['name']}' is already added!")
                 else:
                     data["tournaments"].append(tournament_data)
-                    save_data(data)
                     
-                    st.success(f"✅ Added: {tournament_data['tournament']['name']}")
-                    
-                    # Show summary
-                    event = tournament_data["events"][0]
-                    col1, col2, col3 = st.columns(3)
-                    col1.metric("Entrants", event.get("numEntrants", 0))
-                    col2.metric("Sets", len(event.get("sets", [])))
-                    col3.metric("Standings", len(event.get("standings", [])))
-                    
-                    st.rerun()
+                    if save_data(data):
+                        st.success(f"✅ Added: {tournament_data['tournament']['name']}")
+                        
+                        event = tournament_data["events"][0]
+                        col1, col2, col3 = st.columns(3)
+                        col1.metric("Entrants", event.get("numEntrants", 0))
+                        col2.metric("Sets", len(event.get("sets", [])))
+                        col3.metric("Standings", len(event.get("standings", [])))
+                        
+                        st.rerun()
+                    else:
+                        st.error("Failed to save to GitHub. Check your configuration.")
                 
             except Exception as e:
                 st.error(f"❌ Error: {str(e)}")
     
-    # Show existing tournaments
     if data["tournaments"]:
         st.markdown("---")
         st.subheader("📋 Loaded Tournaments")
@@ -1084,14 +1145,12 @@ def show_players_page(data, registry):
         st.info("No tournaments added yet.")
         return
     
-    # Get all players
     all_players = sorted(registry.get("profiles", {}).keys())
     
     if not all_players:
         st.warning("No players found.")
         return
     
-    # Player selector
     selected_player = st.selectbox(
         "Select a player:",
         all_players,
@@ -1104,16 +1163,13 @@ def show_players_page(data, registry):
         
         st.markdown("---")
         
-        # Player header
         st.header(selected_player)
         
-        # Show aliases if any
         all_tags = profile.get("all_tags", [])
         if len(all_tags) > 1:
             other_tags = [t for t in all_tags if t != selected_player]
             st.caption(f"Also known as: {', '.join(other_tags)}")
         
-        # Stats overview
         col1, col2, col3, col4, col5 = st.columns(5)
         col1.metric("Events", details["tournaments_played"])
         col2.metric("Wins", details["total_wins"])
@@ -1124,7 +1180,6 @@ def show_players_page(data, registry):
         
         st.markdown("---")
         
-        # Tournament results
         st.subheader("📊 Tournament Results")
         
         if details["results"]:
@@ -1146,7 +1201,6 @@ def show_players_page(data, registry):
         else:
             st.info("No tournament results found.")
         
-        # Recent sets
         st.markdown("---")
         st.subheader("🎮 Recent Sets")
         
@@ -1165,7 +1219,6 @@ def show_head_to_head_page(data, registry):
         st.info("No tournaments added yet.")
         return
     
-    # Get all players
     all_players = sorted(registry.get("profiles", {}).keys())
     
     if len(all_players) < 2:
@@ -1218,7 +1271,6 @@ def show_tournaments_page(data):
         st.info("No tournaments added yet.")
         return
     
-    # Sort by date
     tournaments = sorted(
         data["tournaments"],
         key=lambda t: t["tournament"].get("startAt", 0),
@@ -1238,7 +1290,6 @@ def show_tournaments_page(data):
             col1.metric("Entrants", event.get("numEntrants", "N/A"))
             col2.metric("Sets", len(event.get("sets", [])))
             
-            # Get winner
             winner = "N/A"
             for standing in event.get("standings", []):
                 if standing.get("placement") == 1 and standing.get("entrant"):
@@ -1246,7 +1297,6 @@ def show_tournaments_page(data):
                     break
             col3.metric("Winner", winner)
             
-            # Top 8
             st.markdown("**Top 8:**")
             top8 = sorted(
                 [s for s in event.get("standings", []) if s.get("placement", 99) <= 8],
@@ -1333,9 +1383,11 @@ def show_settings_page(data):
     
     if st.button("💾 Save Settings", type="primary"):
         data["settings"] = settings
-        save_data(data)
-        st.success("✅ Settings saved!")
-        st.rerun()
+        if save_data(data):
+            st.success("✅ Settings saved!")
+            st.rerun()
+        else:
+            st.error("Failed to save settings.")
 
 def show_aliases_page(data, registry):
     """Page for managing player aliases"""
@@ -1350,7 +1402,6 @@ def show_aliases_page(data, registry):
     
     st.markdown("---")
     
-    # Show current aliases
     current_aliases = data.get("player_aliases", {})
     
     st.subheader("📋 Current Aliases")
@@ -1372,10 +1423,8 @@ def show_aliases_page(data, registry):
     
     st.markdown("---")
     
-    # Add new alias
     st.subheader("➕ Add Alias")
     
-    # Get all known names
     all_names = set()
     for tourney in data["tournaments"]:
         for event in tourney.get("events", []):
@@ -1396,7 +1445,6 @@ def show_aliases_page(data, registry):
         )
     
     with col2:
-        # Filter out the primary name
         available_aliases = [n for n in all_names if n != primary_name]
         alias_names = st.multiselect(
             "Aliases (same person):",
@@ -1408,16 +1456,16 @@ def show_aliases_page(data, registry):
         if "player_aliases" not in data:
             data["player_aliases"] = {}
         
-        # Merge with existing aliases if any
         existing = data["player_aliases"].get(primary_name, [])
         data["player_aliases"][primary_name] = list(set(existing + alias_names))
-        save_data(data)
-        st.success(f"✅ Linked {', '.join(alias_names)} to {primary_name}")
-        st.rerun()
+        if save_data(data):
+            st.success(f"✅ Linked {', '.join(alias_names)} to {primary_name}")
+            st.rerun()
+        else:
+            st.error("Failed to save alias.")
     
     st.markdown("---")
     
-    # Show auto-detected groups
     st.subheader("🔍 Auto-Detected Player Groups")
     st.caption("These are players automatically linked by Start.gg user ID")
     
