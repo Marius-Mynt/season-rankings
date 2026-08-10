@@ -219,6 +219,56 @@ def archive_season(data, season_id: str, registry: dict):
 # CHARACTER TRACKING
 # =============================================================================
 
+def fetch_character_list_from_startgg(api_token: str, videogame_id: int = 1386) -> dict:
+    """
+    Fetch character names from Start.gg API for a specific videogame.
+    Default videogame_id 1386 = Super Smash Bros. Ultimate
+    
+    Returns: {character_id: character_name}
+    """
+    url = "https://api.start.gg/gql/alpha"
+    headers = {
+        "Authorization": f"Bearer {api_token}",
+        "Content-Type": "application/json"
+    }
+    
+    query = """
+    query VideogameCharacters($videogameId: ID!) {
+      videogame(id: $videogameId) {
+        id
+        name
+        characters {
+          id
+          name
+        }
+      }
+    }
+    """
+    
+    try:
+        response = requests.post(
+            url,
+            headers=headers,
+            json={"query": query, "variables": {"videogameId": videogame_id}}
+        )
+        
+        result = response.json()
+        
+        if "errors" in result:
+            return {}
+        
+        videogame = result.get("data", {}).get("videogame", {})
+        characters = videogame.get("characters", [])
+        
+        char_map = {}
+        for char in characters:
+            if char and char.get("id") and char.get("name"):
+                char_map[str(char["id"])] = char["name"]
+        
+        return char_map
+    except Exception as e:
+        return {}
+
 def extract_character_data(tournaments: list, registry: dict, character_names: dict) -> dict:
     """
     Extract character usage data from tournament sets.
@@ -1562,7 +1612,7 @@ def show_characters_page(data, tournaments):
     
     st.markdown("""
     Map character IDs from Start.gg to readable names.
-    The IDs are detected automatically from tournament data.
+    Use the auto-fetch button to get official character names from Start.gg!
     """)
     
     # Get all character IDs
@@ -1573,32 +1623,87 @@ def show_characters_page(data, tournaments):
         st.info("No character data found in tournaments. Make sure tournaments have game-by-game reporting enabled.")
         return
     
+    # Auto-fetch section
+    st.markdown("---")
+    st.subheader("🔄 Auto-Fetch Character Names")
+    
+    api_key = st.secrets.get("STARTGG_API_KEY", "")
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.caption("Automatically fetch character names from Start.gg for Super Smash Bros. Ultimate")
+    
+    with col2:
+        if st.button("🔄 Fetch from Start.gg", type="primary", disabled=not api_key):
+            with st.spinner("Fetching character names..."):
+                # Fetch for SSBU (videogame ID 1386)
+                fetched_names = fetch_character_list_from_startgg(api_key, 1386)
+                
+                if fetched_names:
+                    # Merge with existing (fetched takes priority for matching IDs)
+                    for char_id, name in fetched_names.items():
+                        if char_id in char_ids:  # Only save IDs we actually use
+                            character_names[char_id] = name
+                    
+                    data["character_names"] = character_names
+                    if save_data(data):
+                        st.success(f"✅ Fetched {len(fetched_names)} character names!")
+                        st.rerun()
+                else:
+                    st.error("Failed to fetch character names. Try again or enter manually below.")
+    
+    # Show how many are mapped vs unmapped
+    mapped_count = sum(1 for cid in char_ids if cid in character_names and character_names[cid])
+    unmapped_count = len(char_ids) - mapped_count
+    
+    st.markdown("---")
+    
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Total Characters Used", len(char_ids))
+    col2.metric("Mapped", mapped_count)
+    col3.metric("Unmapped", unmapped_count, delta=f"-{unmapped_count}" if unmapped_count > 0 else None, delta_color="inverse")
+    
     st.markdown("---")
     st.subheader("📋 Character ID Mapping")
     
-    st.caption(f"Found {len(char_ids)} unique character IDs")
+    # Show unmapped first, then mapped
+    unmapped_ids = [cid for cid in char_ids if cid not in character_names or not character_names[cid]]
+    mapped_ids = [cid for cid in char_ids if cid in character_names and character_names[cid]]
     
-    # Show mapping interface
-    updated = False
+    if unmapped_ids:
+        st.markdown("**⚠️ Unmapped Characters:**")
+        for char_id in sorted(unmapped_ids, key=lambda x: int(x) if x.isdigit() else 0):
+            col1, col2 = st.columns([1, 3])
+            with col1:
+                st.write(f"**ID: {char_id}**")
+            with col2:
+                new_name = st.text_input(
+                    f"Name for {char_id}",
+                    value="",
+                    key=f"char_{char_id}",
+                    placeholder="Enter character name..."
+                )
+                if new_name:
+                    character_names[char_id] = new_name
+        st.markdown("---")
     
-    for char_id in sorted(char_ids, key=lambda x: int(x) if x.isdigit() else 0):
-        col1, col2 = st.columns([1, 3])
-        
-        with col1:
-            st.write(f"**ID: {char_id}**")
-        
-        with col2:
-            current_name = character_names.get(char_id, "")
-            new_name = st.text_input(
-                f"Name for {char_id}",
-                value=current_name,
-                key=f"char_{char_id}",
-                placeholder="Enter character name..."
-            )
-            
-            if new_name != current_name:
-                character_names[char_id] = new_name
-                updated = True
+    if mapped_ids:
+        st.markdown("**✅ Mapped Characters:**")
+        for char_id in sorted(mapped_ids, key=lambda x: int(x) if x.isdigit() else 0):
+            col1, col2 = st.columns([1, 3])
+            with col1:
+                st.write(f"**ID: {char_id}**")
+            with col2:
+                current_name = character_names.get(char_id, "")
+                new_name = st.text_input(
+                    f"Name for {char_id}",
+                    value=current_name,
+                    key=f"char_{char_id}",
+                    placeholder="Enter character name..."
+                )
+                if new_name != current_name:
+                    character_names[char_id] = new_name
     
     st.markdown("---")
     
