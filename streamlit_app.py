@@ -51,12 +51,28 @@ def load_data_from_github():
     try:
         response = requests.get(url, headers=headers, timeout=10)
         
+        # Check rate limit headers
+        rate_limit_remaining = response.headers.get('X-RateLimit-Remaining', 'unknown')
+        
         if response.status_code == 200:
-            content = response.json()
+            # Check if response body is empty
+            if not response.text or response.text.strip() == "":
+                st.session_state["github_load_status"] = "empty_response"
+                st.error("GitHub returned empty response. Please try refreshing.")
+                return get_empty_data()
+            
+            try:
+                content = response.json()
+            except json.JSONDecodeError as e:
+                st.session_state["github_load_status"] = f"json_error: {str(e)}"
+                st.error(f"Invalid JSON from GitHub: {response.text[:100]}")
+                return get_empty_data()
+            
             file_content = base64.b64decode(content["content"]).decode("utf-8")
             data = json.loads(file_content)
             st.session_state["github_sha"] = content["sha"]
             st.session_state["github_load_status"] = "success"
+            st.session_state["github_rate_limit"] = rate_limit_remaining
             # Ensure new fields exist
             if "seasons" not in data:
                 data["seasons"] = []
@@ -69,17 +85,30 @@ def load_data_from_github():
             # File doesn't exist yet - this is OK for first time
             st.session_state["github_load_status"] = "new"
             return get_empty_data()
+        elif response.status_code == 401:
+            st.session_state["github_load_status"] = "auth_failed"
+            st.error("GitHub authentication failed. Check your token in Streamlit secrets.")
+            return get_empty_data()
+        elif response.status_code == 403:
+            st.session_state["github_load_status"] = f"forbidden (rate limit: {rate_limit_remaining})"
+            st.error(f"GitHub access forbidden. Rate limit remaining: {rate_limit_remaining}")
+            return get_empty_data()
         else:
             st.session_state["github_load_status"] = f"error_{response.status_code}"
-            st.error(f"GitHub API error: {response.status_code} - {response.text[:100]}")
+            st.error(f"GitHub API error {response.status_code}: {response.text[:200]}")
             return get_empty_data()
     except requests.exceptions.Timeout:
         st.session_state["github_load_status"] = "timeout"
         st.error("GitHub request timed out. Please refresh the page.")
         return get_empty_data()
+    except requests.exceptions.ConnectionError:
+        st.session_state["github_load_status"] = "connection_error"
+        st.error("Could not connect to GitHub. Check your internet connection.")
+        return get_empty_data()
     except Exception as e:
         st.session_state["github_load_status"] = f"exception: {str(e)}"
         st.error(f"Error loading from GitHub: {str(e)}")
+        return get_empty_data()
         return get_empty_data()
 
 def save_data_to_github(data):
@@ -2047,6 +2076,7 @@ def show_settings_page(data):
         st.write(f"- **Token:** {'✅ Set' if config.get('token') else '❌ Not set'}")
         st.write(f"- **Load Status:** {st.session_state.get('github_load_status', 'unknown')}")
         st.write(f"- **File SHA:** {st.session_state.get('github_sha', 'None')[:12] if st.session_state.get('github_sha') else 'None'}...")
+        st.write(f"- **Rate Limit Remaining:** {st.session_state.get('github_rate_limit', 'unknown')}")
 
 def show_aliases_page(data, registry):
     st.title("🔗 Manage Player Aliases")
