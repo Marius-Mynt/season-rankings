@@ -1388,6 +1388,78 @@ def get_head_to_head(tournaments: list, player1: str, player2: str, registry: di
     
     return h2h
 
+def get_player_h2h_records(tournaments: list, player_name: str, registry: dict) -> list:
+    """Get H2H records for a player against all opponents they've faced."""
+    h2h_records = {}  # opponent -> {wins, losses}
+    
+    for tourney in tournaments:
+        for event in tourney.get("events", []):
+            if event.get("name", "").lower() != "singles":
+                continue
+            
+            for set_data in event.get("sets", []):
+                slots = set_data.get("slots") or []
+                if len(slots) != 2:
+                    continue
+                
+                # Get both players in this set
+                slot_names = []
+                for slot in slots:
+                    if slot and slot.get("entrant"):
+                        raw_name = slot["entrant"].get("name", "")
+                        canonical = get_canonical_name(raw_name, registry)
+                        entrant_id = slot["entrant"].get("id")
+                        slot_names.append((canonical, entrant_id))
+                    else:
+                        slot_names.append(("", None))
+                
+                if len(slot_names) != 2:
+                    continue
+                
+                names = [sn[0] for sn in slot_names]
+                
+                # Check if our player is in this set
+                if player_name not in names:
+                    continue
+                
+                # Find opponent
+                opponent = None
+                player_entrant_id = None
+                opponent_entrant_id = None
+                
+                for name, entrant_id in slot_names:
+                    if name == player_name:
+                        player_entrant_id = entrant_id
+                    else:
+                        opponent = name
+                        opponent_entrant_id = entrant_id
+                
+                if not opponent:
+                    continue
+                
+                # Initialize opponent record if not exists
+                if opponent not in h2h_records:
+                    h2h_records[opponent] = {"wins": 0, "losses": 0}
+                
+                # Determine winner
+                winner_id = set_data.get("winnerId")
+                
+                if player_entrant_id == winner_id:
+                    h2h_records[opponent]["wins"] += 1
+                elif opponent_entrant_id == winner_id:
+                    h2h_records[opponent]["losses"] += 1
+    
+    # Convert to list format
+    result = []
+    for opponent, record in h2h_records.items():
+        result.append({
+            "opponent": opponent,
+            "wins": record["wins"],
+            "losses": record["losses"]
+        })
+    
+    return result
+
 # =============================================================================
 # STREAMLIT UI
 # =============================================================================
@@ -1881,6 +1953,88 @@ def show_players_page(data, registry, tournaments):
             for set_info in details["recent_sets"][:10]:
                 result_emoji = "✅" if set_info["won"] else "❌"
                 st.write(f"{result_emoji} vs **{set_info['opponent']}** - {set_info['score']} ({set_info['round']} @ {set_info['tournament']})")
+        
+        # Head-to-Head section
+        st.markdown("---")
+        st.subheader("🥊 Head-to-Head Record")
+        
+        # Calculate H2H against all opponents
+        h2h_records = get_player_h2h_records(tournaments, selected_player, registry)
+        
+        if h2h_records:
+            # Get rankings to sort opponents
+            excluded_players = data.get("excluded_players", [])
+            rankings_df = calculate_rankings(tournaments, settings, registry, character_names, excluded_players)
+            
+            # Create ranking lookup (player name -> rank)
+            rank_lookup = {}
+            if not rankings_df.empty:
+                for _, row in rankings_df.iterrows():
+                    rank_lookup[row["Player"]] = row["Rank"]
+            
+            # Sort H2H by opponent's rank (unranked players at the end)
+            def get_opponent_rank(record):
+                opponent = record["opponent"]
+                if opponent in rank_lookup:
+                    return rank_lookup[opponent]
+                else:
+                    return 9999  # Unranked at the end
+            
+            sorted_h2h = sorted(h2h_records, key=get_opponent_rank)
+            
+            # Display H2H table
+            h2h_data = []
+            for record in sorted_h2h:
+                opponent = record["opponent"]
+                wins = record["wins"]
+                losses = record["losses"]
+                
+                # Get opponent's rank
+                opp_rank = rank_lookup.get(opponent)
+                rank_display = f"#{opp_rank}" if opp_rank else "—"
+                
+                # Win/loss indicator
+                if wins > losses:
+                    result = "🟢"
+                elif losses > wins:
+                    result = "🔴"
+                else:
+                    result = "🟡"
+                
+                h2h_data.append({
+                    "": result,
+                    "Rank": rank_display,
+                    "Opponent": opponent,
+                    "W": wins,
+                    "L": losses,
+                    "Record": f"{wins}-{losses}"
+                })
+            
+            h2h_df = pd.DataFrame(h2h_data)
+            
+            st.dataframe(
+                h2h_df,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "": st.column_config.TextColumn("", width="small"),
+                    "Rank": st.column_config.TextColumn("Rank", width="small"),
+                    "Opponent": st.column_config.TextColumn("Opponent", width="medium"),
+                    "W": st.column_config.NumberColumn("W", width="small"),
+                    "L": st.column_config.NumberColumn("L", width="small"),
+                    "Record": st.column_config.TextColumn("Record", width="small"),
+                }
+            )
+            
+            # Summary stats
+            total_opponents = len(h2h_records)
+            winning_records = sum(1 for r in h2h_records if r["wins"] > r["losses"])
+            losing_records = sum(1 for r in h2h_records if r["losses"] > r["wins"])
+            even_records = total_opponents - winning_records - losing_records
+            
+            st.caption(f"vs {total_opponents} opponents: 🟢 {winning_records} winning | 🔴 {losing_records} losing | 🟡 {even_records} even")
+        else:
+            st.info("No head-to-head data available.")
 
 def show_head_to_head_page(data, registry, tournaments):
     st.title("🥊 Head-to-Head")
