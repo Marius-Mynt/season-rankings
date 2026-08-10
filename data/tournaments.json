@@ -48414,7 +48414,7 @@
     "drop_worst": false,
     "min_tournaments": 1,
     "characters_enabled": true,
-    "ranking_system": "elo",
+    "ranking_system": "hybrid",
     "elo_k_factor": 32,
     "elo_start": 1500,
     "hybrid_weights": {
