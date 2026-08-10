@@ -48397,7 +48397,7 @@
   ],
   "settings": {
     "points": {
-      "1": 200,
+      "1": 100,
       "2": 70,
       "3": 50,
       "4": 40,
@@ -48502,6 +48502,12 @@
   ],
   "active_season": "season_1786356129",
   "activity_log": [
+    {
+      "timestamp": "2026-08-10T10:38:54.793885",
+      "to_name": "Anonymous",
+      "action": "Updated settings",
+      "details": "minor adjustments"
+    },
     {
       "timestamp": "2026-08-10T10:37:31.602489",
       "to_name": "Anonymous",
