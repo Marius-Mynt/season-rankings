@@ -48503,6 +48503,12 @@
   "active_season": "season_1786356129",
   "activity_log": [
     {
+      "timestamp": "2026-08-10T19:15:07.913603",
+      "to_name": "Marius",
+      "action": "Excluded player from rankings",
+      "details": "FSN | Lukitu"
+    },
+    {
       "timestamp": "2026-08-10T10:45:37.576360",
       "to_name": "Marius",
       "action": "Updated settings",
@@ -48540,5 +48546,8 @@
       "action": "Updated settings",
       "details": "minor adjustments"
     }
+  ],
+  "excluded_players": [
+    "FSN | Lukitu"
   ]
 }
