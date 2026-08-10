@@ -38,9 +38,55 @@ def load_data_from_github():
     """Load tournament data from GitHub repository"""
     config = get_github_config()
     
-    if not config["token"] or not config["repo"]:
-        st.warning("⚠️ GitHub storage not configured. Data will not persist!")
+    if not config["repo"]:
+        st.warning("⚠️ GitHub repo not configured. Data will not persist!")
         return get_empty_data()
+    
+    # For public repos, try reading WITHOUT authentication first (more reliable)
+    # Use raw.githubusercontent.com which doesn't need API auth
+    raw_url = f"https://raw.githubusercontent.com/{config['repo']}/main/{DATA_FILE_PATH}"
+    
+    try:
+        # First, try the raw URL (works for public repos, no auth needed)
+        response = requests.get(raw_url, timeout=10)
+        
+        if response.status_code == 200:
+            try:
+                data = json.loads(response.text)
+                st.session_state["github_load_status"] = "success (raw)"
+                # We still need the SHA for updates, so fetch it separately
+                _fetch_sha_only(config)
+                # Ensure new fields exist
+                if "seasons" not in data:
+                    data["seasons"] = []
+                if "active_season" not in data:
+                    data["active_season"] = None
+                if "character_names" not in data:
+                    data["character_names"] = {}
+                return data
+            except json.JSONDecodeError as e:
+                st.session_state["github_load_status"] = f"json_error: {str(e)}"
+        elif response.status_code == 404:
+            # File doesn't exist yet
+            st.session_state["github_load_status"] = "new"
+            return get_empty_data()
+        else:
+            # Raw URL failed, try API method as fallback
+            st.session_state["github_load_status"] = f"raw_failed_{response.status_code}, trying API..."
+    except Exception as e:
+        st.session_state["github_load_status"] = f"raw_exception: {str(e)}"
+    
+    # Fallback: try the GitHub API with authentication
+    if config.get("token"):
+        return _load_data_via_api(config)
+    
+    st.error("Could not load data from GitHub.")
+    return get_empty_data()
+
+def _fetch_sha_only(config):
+    """Fetch just the SHA for the file (needed for updates)"""
+    if not config.get("token"):
+        return
     
     url = f"https://api.github.com/repos/{config['repo']}/contents/{DATA_FILE_PATH}"
     headers = {
@@ -49,31 +95,42 @@ def load_data_from_github():
     }
     
     try:
+        response = requests.get(url, headers=headers, timeout=5)
+        if response.status_code == 200:
+            content = response.json()
+            st.session_state["github_sha"] = content.get("sha")
+    except:
+        pass  # SHA fetch failed, will get it on next save
+
+def _load_data_via_api(config):
+    """Load data via GitHub API (fallback method)"""
+    url = f"https://api.github.com/repos/{config['repo']}/contents/{DATA_FILE_PATH}"
+    headers = {
+        "Authorization": f"token {config['token']}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    
+    try:
         response = requests.get(url, headers=headers, timeout=10)
-        
-        # Check rate limit headers
         rate_limit_remaining = response.headers.get('X-RateLimit-Remaining', 'unknown')
         
         if response.status_code == 200:
-            # Check if response body is empty
             if not response.text or response.text.strip() == "":
-                st.session_state["github_load_status"] = "empty_response"
-                st.error("GitHub returned empty response. Please try refreshing.")
+                st.session_state["github_load_status"] = "api_empty_response"
                 return get_empty_data()
             
             try:
                 content = response.json()
             except json.JSONDecodeError as e:
-                st.session_state["github_load_status"] = f"json_error: {str(e)}"
-                st.error(f"Invalid JSON from GitHub: {response.text[:100]}")
+                st.session_state["github_load_status"] = f"api_json_error: {str(e)}"
                 return get_empty_data()
             
             file_content = base64.b64decode(content["content"]).decode("utf-8")
             data = json.loads(file_content)
             st.session_state["github_sha"] = content["sha"]
-            st.session_state["github_load_status"] = "success"
+            st.session_state["github_load_status"] = "success (api)"
             st.session_state["github_rate_limit"] = rate_limit_remaining
-            # Ensure new fields exist
+            
             if "seasons" not in data:
                 data["seasons"] = []
             if "active_season" not in data:
@@ -82,32 +139,13 @@ def load_data_from_github():
                 data["character_names"] = {}
             return data
         elif response.status_code == 404:
-            # File doesn't exist yet - this is OK for first time
             st.session_state["github_load_status"] = "new"
             return get_empty_data()
-        elif response.status_code == 401:
-            st.session_state["github_load_status"] = "auth_failed"
-            st.error("GitHub authentication failed. Check your token in Streamlit secrets.")
-            return get_empty_data()
-        elif response.status_code == 403:
-            st.session_state["github_load_status"] = f"forbidden (rate limit: {rate_limit_remaining})"
-            st.error(f"GitHub access forbidden. Rate limit remaining: {rate_limit_remaining}")
-            return get_empty_data()
         else:
-            st.session_state["github_load_status"] = f"error_{response.status_code}"
-            st.error(f"GitHub API error {response.status_code}: {response.text[:200]}")
+            st.session_state["github_load_status"] = f"api_error_{response.status_code}"
             return get_empty_data()
-    except requests.exceptions.Timeout:
-        st.session_state["github_load_status"] = "timeout"
-        st.error("GitHub request timed out. Please refresh the page.")
-        return get_empty_data()
-    except requests.exceptions.ConnectionError:
-        st.session_state["github_load_status"] = "connection_error"
-        st.error("Could not connect to GitHub. Check your internet connection.")
-        return get_empty_data()
     except Exception as e:
-        st.session_state["github_load_status"] = f"exception: {str(e)}"
-        st.error(f"Error loading from GitHub: {str(e)}")
+        st.session_state["github_load_status"] = f"api_exception: {str(e)}"
         return get_empty_data()
         return get_empty_data()
 
