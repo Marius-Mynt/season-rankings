@@ -48414,7 +48414,15 @@
     "drop_worst": false,
     "min_tournaments": 1,
     "characters_enabled": true,
-    "ranking_system": "elo"
+    "ranking_system": "elo",
+    "elo_k_factor": 32,
+    "elo_start": 1500,
+    "hybrid_weights": {
+      "elo": 40,
+      "points": 30,
+      "winrate": 20,
+      "peak": 10
+    }
   },
   "player_aliases": {},
   "character_names": {
@@ -48501,7 +48509,7 @@
       "final_rankings": null
     }
   ],
-  "active_season": null,
+  "active_season": "season_1786356129",
   "activity_log": [
     {
       "timestamp": "2026-08-10T20:17:49.804571",
