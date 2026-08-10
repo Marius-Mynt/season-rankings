@@ -48503,6 +48503,12 @@
   "active_season": "season_1786356129",
   "activity_log": [
     {
+      "timestamp": "2026-08-10T19:16:53.977821",
+      "to_name": "Marius",
+      "action": "Excluded player from rankings",
+      "details": "dphouse | Diragon"
+    },
+    {
       "timestamp": "2026-08-10T19:15:07.913603",
       "to_name": "Marius",
       "action": "Excluded player from rankings",
@@ -48548,6 +48554,7 @@
     }
   ],
   "excluded_players": [
-    "FSN | Lukitu"
+    "FSN | Lukitu",
+    "dphouse | Diragon"
   ]
 }
