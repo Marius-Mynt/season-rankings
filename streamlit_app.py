@@ -219,12 +219,105 @@ def archive_season(data, season_id: str, registry: dict):
 # CHARACTER TRACKING
 # =============================================================================
 
-def fetch_character_list_from_startgg(api_token: str, videogame_id: int = 1386) -> dict:
+# Built-in SSBU character list as fallback (if API doesn't provide it)
+# Based on Start.gg's known character IDs for Super Smash Bros. Ultimate
+SSBU_CHARACTERS_BUILTIN = {
+    "1271": "Mario",
+    "1272": "Donkey Kong",
+    "1273": "Link",
+    "1274": "Samus",
+    "1275": "Dark Samus",
+    "1276": "Yoshi",
+    "1277": "Kirby",
+    "1278": "Fox",
+    "1279": "Pikachu",
+    "1280": "Luigi",
+    "1281": "Ness",
+    "1282": "Captain Falcon",
+    "1283": "Jigglypuff",
+    "1284": "Peach",
+    "1285": "Daisy",
+    "1286": "Bowser",
+    "1287": "Ice Climbers",
+    "1288": "Sheik",
+    "1289": "Zelda",
+    "1290": "Dr. Mario",
+    "1291": "Pichu",
+    "1292": "Falco",
+    "1293": "Marth",
+    "1294": "Lucina",
+    "1295": "Young Link",
+    "1296": "Ganondorf",
+    "1297": "Mewtwo",
+    "1298": "Roy",
+    "1299": "Chrom",
+    "1300": "Mr. Game & Watch",
+    "1301": "Meta Knight",
+    "1302": "Pit",
+    "1303": "Dark Pit",
+    "1304": "Zero Suit Samus",
+    "1305": "Wario",
+    "1306": "Snake",
+    "1307": "Ike",
+    "1308": "Pokemon Trainer",
+    "1309": "Diddy Kong",
+    "1310": "Lucas",
+    "1311": "Sonic",
+    "1312": "King Dedede",
+    "1313": "Olimar",
+    "1314": "Lucario",
+    "1315": "R.O.B.",
+    "1316": "Toon Link",
+    "1317": "Wolf",
+    "1318": "Villager",
+    "1319": "Mega Man",
+    "1320": "Wii Fit Trainer",
+    "1321": "Rosalina & Luma",
+    "1322": "Little Mac",
+    "1323": "Greninja",
+    "1324": "Mii Brawler",
+    "1325": "Mii Swordfighter",
+    "1326": "Mii Gunner",
+    "1327": "Palutena",
+    "1328": "Pac-Man",
+    "1329": "Robin",
+    "1330": "Shulk",
+    "1331": "Bowser Jr.",
+    "1332": "Duck Hunt",
+    "1333": "Ryu",
+    "1334": "Ken",
+    "1335": "Cloud",
+    "1336": "Corrin",
+    "1337": "Bayonetta",
+    "1338": "Inkling",
+    "1339": "Ridley",
+    "1340": "Simon",
+    "1341": "Richter",
+    "1342": "King K. Rool",
+    "1343": "Isabelle",
+    "1344": "Incineroar",
+    "1345": "Piranha Plant",
+    "1346": "Joker",
+    "1347": "Hero",
+    "1348": "Banjo & Kazooie",
+    "1349": "Terry",
+    "1350": "Byleth",
+    "1351": "Min Min",
+    "1352": "Steve",
+    "1353": "Sephiroth",
+    "1354": "Pyra/Mythra",
+    "1355": "Kazuya",
+    "1356": "Sora",
+    # Alternative IDs that might be used
+    "1405": "Random",
+}
+
+def fetch_character_list_from_startgg(api_token: str, videogame_id: int = 1386) -> tuple:
     """
     Fetch character names from Start.gg API for a specific videogame.
     Default videogame_id 1386 = Super Smash Bros. Ultimate
     
-    Returns: {character_id: character_name}
+    Returns: (character_dict, error_message)
     """
     url = "https://api.start.gg/gql/alpha"
     headers = {
@@ -232,42 +325,97 @@ def fetch_character_list_from_startgg(api_token: str, videogame_id: int = 1386) 
         "Content-Type": "application/json"
     }
     
-    query = """
-    query VideogameCharacters($videogameId: ID!) {
-      videogame(id: $videogameId) {
-        id
-        name
-        characters {
-          id
-          name
+    # Try multiple query formats
+    queries = [
+        # Format 1: Standard query
+        """
+        query VideogameCharacters($videogameId: ID!) {
+          videogame(id: $videogameId) {
+            id
+            name
+            characters {
+              id
+              name
+            }
+          }
         }
-      }
-    }
-    """
+        """,
+        # Format 2: Without variable
+        f"""
+        query {{
+          videogame(id: {videogame_id}) {{
+            id
+            name
+            characters {{
+              id
+              name
+            }}
+          }}
+        }}
+        """,
+        # Format 3: Using slug
+        """
+        query {
+          videogame(slug: "ultimate") {
+            id
+            name
+            characters {
+              id
+              name
+            }
+          }
+        }
+        """
+    ]
     
-    try:
-        response = requests.post(
-            url,
-            headers=headers,
-            json={"query": query, "variables": {"videogameId": videogame_id}}
-        )
-        
-        result = response.json()
-        
-        if "errors" in result:
-            return {}
-        
-        videogame = result.get("data", {}).get("videogame", {})
-        characters = videogame.get("characters", [])
-        
-        char_map = {}
-        for char in characters:
-            if char and char.get("id") and char.get("name"):
-                char_map[str(char["id"])] = char["name"]
-        
-        return char_map
-    except Exception as e:
-        return {}
+    last_error = ""
+    
+    for i, query in enumerate(queries):
+        try:
+            if i == 0:
+                payload = {"query": query, "variables": {"videogameId": videogame_id}}
+            else:
+                payload = {"query": query}
+            
+            response = requests.post(url, headers=headers, json=payload)
+            
+            if response.status_code != 200:
+                last_error = f"HTTP {response.status_code}: {response.text[:200]}"
+                continue
+            
+            result = response.json()
+            
+            if "errors" in result:
+                last_error = f"GraphQL error: {result['errors'][0].get('message', 'Unknown error')}"
+                continue
+            
+            videogame = result.get("data", {}).get("videogame")
+            
+            if not videogame:
+                last_error = f"No videogame data returned. Response: {str(result)[:200]}"
+                continue
+            
+            characters = videogame.get("characters", [])
+            
+            if not characters:
+                last_error = f"Videogame found ({videogame.get('name', 'Unknown')}) but no characters field. This API endpoint may not support character data."
+                continue
+            
+            char_map = {}
+            for char in characters:
+                if char and char.get("id") and char.get("name"):
+                    char_map[str(char["id"])] = char["name"]
+            
+            if char_map:
+                return (char_map, None)
+            else:
+                last_error = "Characters list was empty"
+                
+        except Exception as e:
+            last_error = f"Exception: {str(e)}"
+            continue
+    
+    return ({}, last_error)
 
 def extract_character_data(tournaments: list, registry: dict, character_names: dict) -> dict:
     """
@@ -1629,16 +1777,16 @@ def show_characters_page(data, tournaments):
     
     api_key = st.secrets.get("STARTGG_API_KEY", "")
     
-    col1, col2 = st.columns([2, 1])
+    col1, col2, col3 = st.columns([2, 1, 1])
     
     with col1:
-        st.caption("Automatically fetch character names from Start.gg for Super Smash Bros. Ultimate")
+        st.caption("Get character names automatically")
     
     with col2:
-        if st.button("🔄 Fetch from Start.gg", type="primary", disabled=not api_key):
+        if st.button("🔄 Fetch from API", type="secondary", disabled=not api_key):
             with st.spinner("Fetching character names..."):
                 # Fetch for SSBU (videogame ID 1386)
-                fetched_names = fetch_character_list_from_startgg(api_key, 1386)
+                fetched_names, error = fetch_character_list_from_startgg(api_key, 1386)
                 
                 if fetched_names:
                     # Merge with existing (fetched takes priority for matching IDs)
@@ -1651,7 +1799,27 @@ def show_characters_page(data, tournaments):
                         st.success(f"✅ Fetched {len(fetched_names)} character names!")
                         st.rerun()
                 else:
-                    st.error("Failed to fetch character names. Try again or enter manually below.")
+                    st.error(f"Failed to fetch character names.")
+                    if error:
+                        st.code(error, language=None)
+    
+    with col3:
+        if st.button("📦 Use Built-in List", type="primary"):
+            # Use the built-in SSBU character list
+            mapped_count = 0
+            for char_id in char_ids:
+                if char_id in SSBU_CHARACTERS_BUILTIN:
+                    character_names[char_id] = SSBU_CHARACTERS_BUILTIN[char_id]
+                    mapped_count += 1
+            
+            data["character_names"] = character_names
+            if save_data(data):
+                unmapped = len(char_ids) - mapped_count
+                if unmapped > 0:
+                    st.warning(f"✅ Mapped {mapped_count} characters. {unmapped} IDs not in built-in list (may need manual entry).")
+                else:
+                    st.success(f"✅ Mapped all {mapped_count} characters!")
+                st.rerun()
     
     # Show how many are mapped vs unmapped
     mapped_count = sum(1 for cid in char_ids if cid in character_names and character_names[cid])
