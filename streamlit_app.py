@@ -196,7 +196,8 @@ def get_empty_data():
         "seasons": [],
         "active_season": None,
         "character_names": {},
-        "activity_log": []  # Track who did what
+        "activity_log": [],
+        "excluded_players": []  # List of player names excluded from rankings
     }
 
 def get_default_settings():
@@ -1073,12 +1074,15 @@ class StartGGExporter:
 # RANKING CALCULATIONS
 # =============================================================================
 
-def calculate_rankings(tournaments: list, settings: dict, registry: dict, character_names: dict = None) -> pd.DataFrame:
+def calculate_rankings(tournaments: list, settings: dict, registry: dict, character_names: dict = None, excluded_players: list = None) -> pd.DataFrame:
     if not tournaments:
         return pd.DataFrame()
     
     if character_names is None:
         character_names = {}
+    
+    if excluded_players is None:
+        excluded_players = []
     
     points_map = settings["points"]
     player_data = {}
@@ -1196,6 +1200,10 @@ def calculate_rankings(tournaments: list, settings: dict, registry: dict, charac
     
     min_tournaments = settings.get("min_tournaments", 1)
     player_data = {k: v for k, v in player_data.items() if v["tournaments_played"] >= min_tournaments}
+    
+    # Exclude players marked as not ranked
+    if excluded_players:
+        player_data = {k: v for k, v in player_data.items() if k not in excluded_players}
     
     df = pd.DataFrame([
         {
@@ -1521,7 +1529,8 @@ def show_rankings_page(data, registry, tournaments):
     
     settings = data.get("settings", get_default_settings())
     character_names = data.get("character_names", {})
-    df = calculate_rankings(tournaments, settings, registry, character_names)
+    excluded_players = data.get("excluded_players", [])
+    df = calculate_rankings(tournaments, settings, registry, character_names, excluded_players)
     
     if df.empty:
         st.warning("No ranking data available.")
@@ -1650,27 +1659,171 @@ def show_players_page(data, registry, tournaments):
         st.info("No tournaments added yet.")
         return
     
-    all_players = sorted(registry.get("profiles", {}).keys())
+    # Get all players with their attendance count
+    player_attendance = {}
+    for tourney in tournaments:
+        for event in tourney.get("events", []):
+            if event.get("name", "").lower() != "singles":
+                continue
+            for standing in event.get("standings", []):
+                entrant = standing.get("entrant") or {}
+                raw_name = entrant.get("name", "")
+                if raw_name:
+                    canonical = get_canonical_name(raw_name, registry)
+                    player_attendance[canonical] = player_attendance.get(canonical, 0) + 1
     
-    if not all_players:
+    if not player_attendance:
         st.warning("No players found.")
         return
     
-    selected_player = st.selectbox("Select a player:", all_players)
+    # Sort by attendance (most first)
+    sorted_players = sorted(player_attendance.items(), key=lambda x: x[1], reverse=True)
+    all_players = [p[0] for p in sorted_players]
+    
+    excluded_players = data.get("excluded_players", [])
+    
+    # Player pills display
+    st.markdown("### Select a player")
+    
+    # Create pill-style buttons using columns
+    # We'll use custom CSS for pill styling
+    st.markdown("""
+    <style>
+    .player-pill {
+        display: inline-block;
+        padding: 6px 14px;
+        margin: 3px;
+        border-radius: 20px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .player-pill-ranked {
+        background-color: #2e7d32;
+        color: white;
+    }
+    .player-pill-excluded {
+        background-color: #616161;
+        color: #bbb;
+    }
+    .player-pill-selected {
+        border: 2px solid #fff;
+        font-weight: bold;
+    }
+    .attendance-badge {
+        font-size: 11px;
+        opacity: 0.8;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Player selection - use selectbox but also show pills above
+    selected_player = st.selectbox(
+        "Search player:",
+        all_players,
+        format_func=lambda x: f"{x} ({player_attendance.get(x, 0)} events)" + (" 🚫" if x in excluded_players else ""),
+        label_visibility="collapsed"
+    )
+    
+    # Show player pills in a grid
+    st.markdown("**Quick select** (sorted by attendance):")
+    
+    # Display pills in rows
+    cols_per_row = 5
+    for row_start in range(0, min(len(all_players), 20), cols_per_row):  # Show top 20
+        cols = st.columns(cols_per_row)
+        for i, col in enumerate(cols):
+            player_idx = row_start + i
+            if player_idx < len(all_players):
+                player = all_players[player_idx]
+                attendance = player_attendance.get(player, 0)
+                is_excluded = player in excluded_players
+                
+                # Truncate long names
+                display_name = player[:12] + "..." if len(player) > 15 else player
+                
+                with col:
+                    # Style based on ranked/excluded
+                    if is_excluded:
+                        btn_label = f"🚫 {display_name}"
+                    else:
+                        btn_label = f"{display_name} ({attendance})"
+                    
+                    if st.button(btn_label, key=f"pill_{player_idx}", use_container_width=True):
+                        st.session_state["selected_player"] = player
+                        st.rerun()
+    
+    if len(all_players) > 20:
+        st.caption(f"Showing top 20 of {len(all_players)} players. Use search above for others.")
+    
+    # Check if player was selected via pill
+    if "selected_player" in st.session_state:
+        selected_player = st.session_state["selected_player"]
     
     if selected_player:
         character_names = data.get("character_names", {})
         details = get_player_details(tournaments, selected_player, registry, character_names)
         profile = details.get("profile", {})
+        is_excluded = selected_player in excluded_players
         
         st.markdown("---")
-        st.header(selected_player)
         
-        all_tags = profile.get("all_tags", [])
-        if len(all_tags) > 1:
-            other_tags = [t for t in all_tags if t != selected_player]
-            st.caption(f"Also known as: {', '.join(other_tags)}")
+        # Player header with ranking toggle
+        col1, col2 = st.columns([3, 1])
         
+        with col1:
+            st.header(selected_player)
+            all_tags = profile.get("all_tags", [])
+            if len(all_tags) > 1:
+                other_tags = [t for t in all_tags if t != selected_player]
+                st.caption(f"Also known as: {', '.join(other_tags)}")
+        
+        with col2:
+            # Ranking toggle
+            st.markdown("**Ranking Status**")
+            
+            to_name = get_to_name()
+            
+            # Toggle switch
+            new_status = st.toggle(
+                "Include in rankings",
+                value=not is_excluded,
+                key=f"rank_toggle_{selected_player}",
+                help="Toggle to include/exclude this player from rankings"
+            )
+            
+            # Status text
+            if new_status:
+                st.markdown("✅ **Ranked**")
+            else:
+                st.markdown("🚫 **Not Ranked**")
+            
+            # Handle toggle change
+            current_excluded = selected_player in excluded_players
+            should_exclude = not new_status
+            
+            if should_exclude != current_excluded:
+                if not to_name:
+                    st.warning("⚠️ Enter your name to change ranking status")
+                else:
+                    if should_exclude:
+                        # Add to excluded
+                        if selected_player not in excluded_players:
+                            excluded_players.append(selected_player)
+                            data["excluded_players"] = excluded_players
+                            log_activity(data, "Excluded player from rankings", selected_player)
+                            save_data(data)
+                            st.rerun()
+                    else:
+                        # Remove from excluded
+                        if selected_player in excluded_players:
+                            excluded_players.remove(selected_player)
+                            data["excluded_players"] = excluded_players
+                            log_activity(data, "Included player in rankings", selected_player)
+                            save_data(data)
+                            st.rerun()
+        
+        # Stats row
         col1, col2, col3, col4, col5 = st.columns(5)
         col1.metric("Events", details["tournaments_played"])
         col2.metric("Wins", details["total_wins"])
