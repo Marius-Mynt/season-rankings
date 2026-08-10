@@ -48413,8 +48413,7 @@
     "best_n": 6,
     "drop_worst": false,
     "min_tournaments": 1,
-    "characters_enabled": true,
-    "ranking_system": "elo"
+    "characters_enabled": true
   },
   "player_aliases": {},
   "character_names": {
@@ -48504,6 +48503,12 @@
   "active_season": null,
   "activity_log": [
     {
+      "timestamp": "2026-08-10T20:17:49.804571",
+      "to_name": "Marius",
+      "action": "Excluded player from rankings",
+      "details": "Art Point | TheSunTitan"
+    },
+    {
       "timestamp": "2026-08-10T19:16:53.977821",
       "to_name": "Marius",
       "action": "Excluded player from rankings",
@@ -48556,6 +48561,7 @@
   ],
   "excluded_players": [
     "FSN | Lukitu",
-    "dphouse | Diragon"
+    "dphouse | Diragon",
+    "Art Point | TheSunTitan"
   ]
 }
