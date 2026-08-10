@@ -1086,7 +1086,7 @@ class StartGGExporter:
 def calculate_elo_ratings(tournaments: list, registry: dict, settings: dict) -> dict:
     """
     Calculate ELO ratings for all players based on set results.
-    Processes tournaments chronologically, then sets within each tournament.
+    Processes tournaments chronologically, then sets within each tournament by completedAt.
     
     Returns: {player_name: {"elo": rating, "peak_elo": highest, "sets_played": count}}
     """
@@ -1141,8 +1141,15 @@ def calculate_elo_ratings(tournaments: list, registry: dict, settings: dict) -> 
             if event.get("name", "").lower() != "singles":
                 continue
             
-            # Process sets
-            for set_data in event.get("sets", []):
+            # Sort sets by completedAt for true chronological order within tournament
+            all_sets = event.get("sets", [])
+            sorted_sets = sorted(
+                all_sets,
+                key=lambda s: s.get("completedAt") or 0
+            )
+            
+            # Process sets in chronological order
+            for set_data in sorted_sets:
                 slots = set_data.get("slots") or []
                 if len(slots) != 2:
                     continue
@@ -1152,7 +1159,6 @@ def calculate_elo_ratings(tournaments: list, registry: dict, settings: dict) -> 
                     continue
                 
                 # Get player names
-                players = []
                 winner_name = None
                 loser_name = None
                 
