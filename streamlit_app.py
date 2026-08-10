@@ -49,13 +49,14 @@ def load_data_from_github():
     }
     
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=10)
         
         if response.status_code == 200:
             content = response.json()
             file_content = base64.b64decode(content["content"]).decode("utf-8")
             data = json.loads(file_content)
             st.session_state["github_sha"] = content["sha"]
+            st.session_state["github_load_status"] = "success"
             # Ensure new fields exist
             if "seasons" not in data:
                 data["seasons"] = []
@@ -65,11 +66,19 @@ def load_data_from_github():
                 data["character_names"] = {}
             return data
         elif response.status_code == 404:
+            # File doesn't exist yet - this is OK for first time
+            st.session_state["github_load_status"] = "new"
             return get_empty_data()
         else:
-            st.error(f"GitHub API error: {response.status_code}")
+            st.session_state["github_load_status"] = f"error_{response.status_code}"
+            st.error(f"GitHub API error: {response.status_code} - {response.text[:100]}")
             return get_empty_data()
+    except requests.exceptions.Timeout:
+        st.session_state["github_load_status"] = "timeout"
+        st.error("GitHub request timed out. Please refresh the page.")
+        return get_empty_data()
     except Exception as e:
+        st.session_state["github_load_status"] = f"exception: {str(e)}"
         st.error(f"Error loading from GitHub: {str(e)}")
         return get_empty_data()
 
@@ -1340,6 +1349,17 @@ def main():
         st.caption(f"📊 {len(active_tournaments)} tournaments")
         st.caption(f"👥 {len(registry['profiles'])} players")
         
+        # Show GitHub connection status
+        load_status = st.session_state.get("github_load_status", "unknown")
+        if load_status == "success":
+            st.caption("☁️ Synced with GitHub")
+        elif load_status == "new":
+            st.caption("☁️ New data file")
+        elif load_status == "unknown":
+            st.caption("⏳ Loading...")
+        else:
+            st.caption(f"⚠️ GitHub: {load_status}")
+        
         st.markdown("---")
         if st.button("🔄 Refresh Data"):
             refresh_data()
@@ -1379,17 +1399,19 @@ def show_rankings_page(data, registry, tournaments):
         st.warning("No ranking data available.")
         return
     
-    col1, col2, col3, col4 = st.columns(4)
+    # Better layout: Leader first, then stats
+    leader_name = df.iloc[0]["Player"] if len(df) > 0 else "N/A"
+    
+    col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
     with col1:
-        st.metric("Tournaments", len(tournaments))
+        st.metric("👑 Leader", leader_name)
     with col2:
-        st.metric("Players", len(df))
+        st.metric("Tournaments", len(tournaments))
     with col3:
+        st.metric("Players", len(df))
+    with col4:
         total_sets = sum(len(event.get("sets", [])) for t in tournaments for event in t.get("events", []))
         st.metric("Total Sets", total_sets)
-    with col4:
-        if len(df) > 0:
-            st.metric("Leader", df.iloc[0]["Player"])
     
     st.markdown("---")
     
@@ -2018,6 +2040,13 @@ def show_settings_page(data):
         st.write(f"- **Seasons:** {len(data.get('seasons', []))}")
         st.write(f"- **Player Aliases:** {len(data.get('player_aliases', {}))}")
         st.write(f"- **Character Mappings:** {len(data.get('character_names', {}))}")
+        
+        st.markdown("### ☁️ GitHub Connection")
+        config = get_github_config()
+        st.write(f"- **Repo:** {config.get('repo', 'Not set')}")
+        st.write(f"- **Token:** {'✅ Set' if config.get('token') else '❌ Not set'}")
+        st.write(f"- **Load Status:** {st.session_state.get('github_load_status', 'unknown')}")
+        st.write(f"- **File SHA:** {st.session_state.get('github_sha', 'None')[:12] if st.session_state.get('github_sha') else 'None'}...")
 
 def show_aliases_page(data, registry):
     st.title("🔗 Manage Player Aliases")
