@@ -195,7 +195,8 @@ def get_empty_data():
         "player_aliases": {},
         "seasons": [],
         "active_season": None,
-        "character_names": {}  # {character_id: "Character Name"}
+        "character_names": {},
+        "activity_log": []  # Track who did what
     }
 
 def get_default_settings():
@@ -213,6 +214,44 @@ def get_default_settings():
         "min_tournaments": 1,
         "characters_enabled": True  # Toggle for character features
     }
+
+# =============================================================================
+# TO IDENTIFICATION & ACTIVITY LOGGING
+# =============================================================================
+
+def get_to_name():
+    """Get the current TO's name from session state"""
+    return st.session_state.get("to_name", "")
+
+def set_to_name(name: str):
+    """Set the current TO's name"""
+    st.session_state["to_name"] = name
+
+def log_activity(data: dict, action: str, details: str = ""):
+    """Log an activity with timestamp and TO name"""
+    if "activity_log" not in data:
+        data["activity_log"] = []
+    
+    to_name = get_to_name() or "Anonymous"
+    
+    entry = {
+        "timestamp": datetime.now().isoformat(),
+        "to_name": to_name,
+        "action": action,
+        "details": details
+    }
+    
+    # Keep last 100 entries
+    data["activity_log"].insert(0, entry)
+    data["activity_log"] = data["activity_log"][:100]
+
+def format_activity_time(iso_timestamp: str) -> str:
+    """Format timestamp for display"""
+    try:
+        dt = datetime.fromisoformat(iso_timestamp)
+        return dt.strftime("%b %d, %H:%M")
+    except:
+        return iso_timestamp[:16]
 
 def load_data():
     """Load data, using session state if available"""
@@ -1348,6 +1387,10 @@ def get_head_to_head(tournaments: list, player1: str, player2: str, registry: di
 def main():
     data = load_data()
     
+    # Ensure activity_log exists
+    if "activity_log" not in data:
+        data["activity_log"] = []
+    
     # Get active tournaments based on season
     active_tournaments = get_active_tournaments(data)
     
@@ -1358,6 +1401,22 @@ def main():
     
     with st.sidebar:
         st.title("🎮 Season Rankings")
+        
+        # TO Name input
+        current_to = get_to_name()
+        to_name = st.text_input(
+            "👤 Your Name",
+            value=current_to,
+            placeholder="Enter your name...",
+            help="Identify yourself for activity tracking"
+        )
+        if to_name != current_to:
+            set_to_name(to_name)
+        
+        if not to_name:
+            st.caption("⚠️ Set your name to track changes")
+        
+        st.markdown("---")
         
         # Season selector
         seasons = data.get("seasons", [])
@@ -1404,7 +1463,7 @@ def main():
         if settings.get("characters_enabled", True):
             nav_options.append("🎮 Characters")
         
-        nav_options.extend(["⚙️ Settings", "🔗 Manage Aliases"])
+        nav_options.extend(["⚙️ Settings", "🔗 Manage Aliases", "📜 Activity Log"])
         
         page = st.radio(
             "Navigation",
@@ -1450,6 +1509,8 @@ def main():
         show_settings_page(data)
     elif page == "🔗 Manage Aliases":
         show_aliases_page(data, registry)
+    elif page == "📜 Activity Log":
+        show_activity_log_page(data)
 
 def show_rankings_page(data, registry, tournaments):
     st.title("🏆 Season Rankings")
@@ -1545,6 +1606,7 @@ def show_add_tournament_page(data):
                     st.warning(f"Tournament '{tournament_data['tournament']['name']}' is already added!")
                 else:
                     data["tournaments"].append(tournament_data)
+                    log_activity(data, "Added tournament", tournament_data['tournament']['name'])
                     
                     if save_data(data):
                         st.success(f"✅ Added: {tournament_data['tournament']['name']}")
@@ -1570,7 +1632,9 @@ def show_add_tournament_page(data):
                 st.write(f"**{t['tournament']['name']}**{date_str}")
             with col2:
                 if st.button("🗑️", key=f"delete_{i}"):
+                    deleted_name = data["tournaments"][i]["tournament"]["name"]
                     data["tournaments"].pop(i)
+                    log_activity(data, "Removed tournament", deleted_name)
                     save_data(data)
                     st.rerun()
 
@@ -1774,6 +1838,7 @@ def show_seasons_page(data, registry):
     if st.button("➕ Create Season", disabled=not season_name or not selected_tournaments):
         tournament_ids = [tournament_options[name] for name in selected_tournaments]
         create_season(data, season_name, tournament_ids)
+        log_activity(data, "Created season", f"{season_name} ({len(tournament_ids)} tournaments)")
         if save_data(data):
             st.success(f"✅ Created season: {season_name}")
             st.rerun()
@@ -2025,7 +2090,32 @@ def show_settings_page(data):
     st.markdown("---")
     
     if st.button("💾 Save Settings", type="primary"):
+        # Build change summary
+        old_settings = data.get("settings", {})
+        changes = []
+        
+        if old_settings.get("attendance_scaling") != settings.get("attendance_scaling"):
+            changes.append(f"attendance scaling: {'on' if settings.get('attendance_scaling') else 'off'}")
+        if old_settings.get("drop_worst") != settings.get("drop_worst"):
+            changes.append(f"drop worst: {'on' if settings.get('drop_worst') else 'off'}")
+        if old_settings.get("best_n_enabled") != settings.get("best_n_enabled"):
+            changes.append(f"best N: {'on' if settings.get('best_n_enabled') else 'off'}")
+        if old_settings.get("characters_enabled") != settings.get("characters_enabled"):
+            changes.append(f"characters: {'on' if settings.get('characters_enabled') else 'off'}")
+        if old_settings.get("min_tournaments") != settings.get("min_tournaments"):
+            changes.append(f"min tournaments: {settings.get('min_tournaments')}")
+        
+        # Check points changes
+        old_points = old_settings.get("points", {})
+        new_points = settings.get("points", {})
+        if old_points != new_points:
+            changes.append("points system")
+        
         data["settings"] = settings
+        
+        change_summary = ", ".join(changes) if changes else "minor adjustments"
+        log_activity(data, "Updated settings", change_summary)
+        
         if save_data(data):
             st.success("✅ Settings saved!")
             st.rerun()
@@ -2133,6 +2223,7 @@ def show_aliases_page(data, registry):
             with col3:
                 if st.button("🗑️", key=f"del_alias_{display_name}"):
                     del data["player_aliases"][display_name]
+                    log_activity(data, "Removed alias", display_name)
                     save_data(data)
                     st.rerun()
     else:
@@ -2164,9 +2255,80 @@ def show_aliases_page(data, registry):
             data["player_aliases"] = {}
         existing = data["player_aliases"].get(primary_name, [])
         data["player_aliases"][primary_name] = list(set(existing + alias_names))
+        log_activity(data, "Added alias", f"{primary_name} = {', '.join(alias_names)}")
         if save_data(data):
             st.success(f"✅ Linked aliases to {primary_name}")
             st.rerun()
+
+def show_activity_log_page(data):
+    st.title("📜 Activity Log")
+    
+    st.markdown("Track who made changes and when.")
+    
+    activity_log = data.get("activity_log", [])
+    
+    if not activity_log:
+        st.info("No activity recorded yet. Changes will appear here as TOs add tournaments, update settings, etc.")
+        return
+    
+    st.markdown("---")
+    
+    # Filter options
+    col1, col2 = st.columns(2)
+    with col1:
+        # Get unique TO names
+        to_names = list(set(entry.get("to_name", "Anonymous") for entry in activity_log))
+        filter_to = st.selectbox("Filter by TO:", ["All"] + sorted(to_names))
+    with col2:
+        # Get unique actions
+        actions = list(set(entry.get("action", "") for entry in activity_log))
+        filter_action = st.selectbox("Filter by action:", ["All"] + sorted(actions))
+    
+    st.markdown("---")
+    
+    # Display log
+    filtered_log = activity_log
+    
+    if filter_to != "All":
+        filtered_log = [e for e in filtered_log if e.get("to_name") == filter_to]
+    if filter_action != "All":
+        filtered_log = [e for e in filtered_log if e.get("action") == filter_action]
+    
+    if not filtered_log:
+        st.info("No matching activities found.")
+        return
+    
+    for entry in filtered_log[:50]:  # Show last 50
+        timestamp = format_activity_time(entry.get("timestamp", ""))
+        to_name = entry.get("to_name", "Anonymous")
+        action = entry.get("action", "Unknown action")
+        details = entry.get("details", "")
+        
+        # Color code by action type
+        if "Added" in action:
+            icon = "➕"
+        elif "Updated" in action or "Changed" in action:
+            icon = "✏️"
+        elif "Removed" in action or "Deleted" in action:
+            icon = "🗑️"
+        elif "Created" in action:
+            icon = "🆕"
+        elif "Archived" in action:
+            icon = "📦"
+        else:
+            icon = "📝"
+        
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            st.caption(timestamp)
+        with col2:
+            if details:
+                st.write(f"{icon} **{to_name}** {action.lower()}: {details}")
+            else:
+                st.write(f"{icon} **{to_name}** {action.lower()}")
+    
+    if len(filtered_log) > 50:
+        st.caption(f"Showing 50 of {len(filtered_log)} entries")
 
 if __name__ == "__main__":
     main()
