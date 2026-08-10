@@ -1888,23 +1888,7 @@ def main():
     with st.sidebar:
         st.title("🎮 Season Rankings")
         
-        # TO Name input
-        current_to = get_to_name()
-        to_name = st.text_input(
-            "👤 Your Name",
-            value=current_to,
-            placeholder="Enter your name...",
-            help="Identify yourself for activity tracking"
-        )
-        if to_name != current_to:
-            set_to_name(to_name)
-        
-        if not to_name:
-            st.caption("⚠️ Set your name to track changes")
-        
-        st.markdown("---")
-        
-        # Season selector
+        # Season selector (top)
         seasons = data.get("seasons", [])
         active_season = data.get("active_season")
         
@@ -1938,39 +1922,54 @@ def main():
                         st.rerun()
                     break
         
+        # Stats
+        st.caption(f"📊 {len(active_tournaments)} tournaments · 👥 {len(registry['profiles'])} players")
+        
         st.markdown("---")
         
-        # Build navigation options based on settings
-        nav_options = ["🏆 Rankings", "➕ Add Tournament", "👤 Players", "🥊 Head-to-Head", 
-                       "📋 Tournaments", "📅 Seasons"]
+        # TO Name input
+        current_to = get_to_name()
+        to_name = st.text_input(
+            "👤 Your Name",
+            value=current_to,
+            placeholder="Enter your name...",
+            help="Identify yourself for activity tracking"
+        )
+        if to_name != current_to:
+            set_to_name(to_name)
         
-        # Only show Characters page if enabled
+        if not to_name:
+            st.caption("⚠️ Set your name to track changes")
+        
+        st.markdown("---")
+        
+        # Build navigation - Main section
         settings = data.get("settings", get_default_settings())
-        if settings.get("characters_enabled", True):
-            nav_options.append("🎮 Characters")
-        
-        nav_options.extend(["⚙️ Settings", "🔗 Manage Aliases", "📜 Activity Log"])
         
         page = st.radio(
             "Navigation",
-            nav_options,
+            ["🏆 Rankings", "👤 Players", "🥊 Head-to-Head", "📋 Tournaments"],
             label_visibility="collapsed"
         )
         
-        st.markdown("---")
-        st.caption(f"📊 {len(active_tournaments)} tournaments")
-        st.caption(f"👥 {len(registry['profiles'])} players")
+        st.markdown("")  # Spacer
         
-        # Show GitHub connection status
-        load_status = st.session_state.get("github_load_status", "unknown")
-        if load_status == "success":
-            st.caption("☁️ Synced with GitHub")
-        elif load_status == "new":
-            st.caption("☁️ New data file")
-        elif load_status == "unknown":
-            st.caption("⏳ Loading...")
-        else:
-            st.caption(f"⚠️ GitHub: {load_status}")
+        # Build navigation - Management section  
+        management_options = ["➕ Add Tournament", "📅 Seasons"]
+        if settings.get("characters_enabled", True):
+            management_options.append("🎮 Characters")
+        management_options.extend(["🔗 Manage Aliases", "📜 Activity Log", "⚙️ Settings"])
+        
+        page2 = st.radio(
+            "Management",
+            management_options,
+            label_visibility="collapsed",
+            index=None
+        )
+        
+        # Determine which page is active
+        if page2:
+            page = page2
         
         st.markdown("---")
         if st.button("🔄 Refresh Data"):
